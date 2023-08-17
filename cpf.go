@@ -12,8 +12,8 @@ var (
 	// ErrInvalidCPF is an error returned when an invalid CPF is encountered.
 	ErrInvalidCPF = errors.New("domain: invalid cpf passed")
 
-	cpfFirstDigitTable  = []int{10, 9, 8, 7, 6, 5, 4, 3, 2}
-	cpfSecondDigitTable = []int{11, 10, 9, 8, 7, 6, 5, 4, 3, 2}
+	cpfFirstTable  = []int{10, 9, 8, 7, 6, 5, 4, 3, 2}
+	cpfSecondTable = []int{11, 10, 9, 8, 7, 6, 5, 4, 3, 2}
 )
 
 // NewCPF creates a new CPF instance from a string representation.
@@ -48,14 +48,13 @@ func (cpf CPF) IsValid() bool {
 	}
 
 	var sum1 int
-	for i, d := range cpfFirstDigitTable {
+	for i, d := range cpfFirstTable {
 		c := int(buf[i] - '0')
 		if c < 0 || c > 9 {
 			return false
 		}
 		sum1 += d * c
 	}
-
 	rest1 := sum1 % 11
 	d1 := 0
 
@@ -70,7 +69,7 @@ func (cpf CPF) IsValid() bool {
 	}
 
 	var sum2 int
-	for i, d := range cpfSecondDigitTable {
+	for i, d := range cpfSecondTable {
 		c := int(buf[i] - '0')
 		if c < 0 || c > 9 {
 			return false
