@@ -300,7 +300,8 @@ func (uf UF) Value() (driver.Value, error) {
 // CEP represents a Brazilian postal code (Código de Endereçamento Postal).
 type CEP string
 
-// NewCEP creates a CEP instance from a string representation.
+// NewCEP creates a CEP instance from a string representation and removes any
+// punctuation characters.
 //
 // It verifies the length of the CEP, the digits, and checks the cache for known
 // invalid CEPs. It does not make requests to APIs to validate the corresponding
