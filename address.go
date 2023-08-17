@@ -1,17 +1,34 @@
 package br
 
 import (
+	"bytes"
 	"database/sql/driver"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
-	"unsafe"
+	"time"
+
+	"github.com/phenpessoa/gutils/cache"
+	"github.com/phenpessoa/gutils/unsafex"
 )
 
 var (
 	// ErrInvalidUF is returned when an invalid state (UF) code is passed.
 	ErrInvalidUF = errors.New("br: invalid uf passed")
+
+	// ErrInvalidCEP is returned when an invalid CEP code is passed.
+	ErrInvalidCEP = errors.New("domain: invalid cep passed")
+
+	// ErrInvalidSerializedAddress is returned when trying to deserialize an
+	// invalid string into an Address.
+	ErrInvalidSerializedAddress = errors.New(
+		"domain: invalid serialized address",
+	)
 )
 
 // UF stands for Unidade Federativa and represents a Brazilian state.
@@ -229,7 +246,7 @@ func (uf UF) Codigo() int {
 
 // UnmarshalJSON implements the json.Unmarshaler interface for UF.
 func (uf *UF) UnmarshalJSON(b []byte) error {
-	str := unsafe.String(unsafe.SliceData(b), len(b))
+	str := unsafex.String(b)
 	if strings.Contains(str, `"`) {
 		str = strings.ReplaceAll(str, `"`, "")
 		_uf, err := NewUFFromStr(str)
@@ -278,4 +295,353 @@ func (uf *UF) Scan(value any) error {
 // Value implements the driver.Valuer interface for UF.
 func (uf UF) Value() (driver.Value, error) {
 	return int64(uf), nil
+}
+
+// CEP represents a Brazilian postal code (Código de Endereçamento Postal).
+type CEP string
+
+// NewCEP creates a CEP instance from a string representation.
+//
+// It verifies the length of the CEP, the digits, and checks the cache for known
+// invalid CEPs. It does not make requests to APIs to validate the corresponding
+// address.
+//
+// To check if this CEP actually represents an Address, call the CEP.ToAddress
+// method.
+func NewCEP(s string) (CEP, error) {
+	s = strings.ReplaceAll(s, "-", "")
+	s = strings.ReplaceAll(s, ".", "")
+	cep := CEP(s)
+	if !cep.IsValid() {
+		return "", ErrInvalidCEP
+	}
+	return cep, nil
+}
+
+// String returns the formatted CEP string as XXXXX-XXX.
+func (cep CEP) String() string {
+	if !cep.IsValid() {
+		return ""
+	}
+
+	out := make([]byte, 9)
+	for i := range cep {
+		switch {
+		case i < 5:
+			out[i] = cep[i]
+		case i == 5:
+			out[i] = '-'
+			out[i+1] = cep[i]
+		default:
+			out[i+1] = cep[i]
+		}
+	}
+
+	return unsafex.String(out)
+}
+
+// IsValid checks whether the provided CEP is valid based on its length, digits
+// and check the caches for known invalid CEPs.
+//
+// It does not make requests to APIs to validate the corresponding address.
+//
+// To check if this CEP actually represents an Address, call the CEP.ToAddress
+// method.
+func (cep CEP) IsValid() bool {
+	if len(cep) != 8 {
+		return false
+	}
+
+	for i := range cep {
+		if cep[i] < '0' || cep[i] > '9' {
+			return false
+		}
+	}
+
+	return !invalidCEPs.Contains(string(cep))
+}
+
+// ToAddress converts a CEP into an Address instance, retrieving address
+// information associated with the CEP.
+//
+// This method may perform requests to external APIs to fetch address details
+// based on the CEP.
+func (cep CEP) ToAddress() (addr Address, err error) {
+	if !cep.IsValid() {
+		return Address{}, ErrInvalidCEP
+	}
+
+	if addr, ok := addresses.Get(string(cep)); ok {
+		return addr, nil
+	}
+
+	defer func() {
+		if err != nil && errors.Is(err, ErrInvalidCEP) {
+			invalidCEPs.Set(string(cep), unit{})
+		}
+	}()
+
+	addr, err = buscaCEP(cep)
+	if err != nil {
+		if errors.Is(err, ErrInvalidCEP) {
+			return Address{}, ErrInvalidCEP
+		}
+
+		var err2 error
+		addr, err2 = viaCEP(cep)
+		if err2 != nil {
+			if errors.Is(err2, ErrInvalidCEP) {
+				return Address{}, ErrInvalidCEP
+			}
+
+			return Address{}, fmt.Errorf(
+				"failed to validate cep: %w",
+				errors.Join(err, err2),
+			)
+		}
+	}
+
+	addresses.Set(string(cep), addr)
+	return addr, nil
+}
+
+func buscaCEP(cep CEP) (Address, error) {
+	type buscaCEPResponse struct {
+		Erro     bool      `json:"erro"`
+		Mensagem string    `json:"mensagem"`
+		Total    int       `json:"total"`
+		Dados    []Address `json:"dados"`
+	}
+
+	const buscaCEPURL = "https://buscacepinter.correios.com.br/app/endereco/carrega-cep-endereco.php"
+	form := url.Values{}
+	form.Set("pagina", "/app/endereco/index.php")
+	form.Set("endereco", string(cep))
+	form.Set("tipoCEP", "ALL")
+	res, err := http.Post(
+		buscaCEPURL,
+		"application/x-www-form-urlencoded; charset=UTF-8",
+		strings.NewReader(form.Encode()),
+	)
+	if err != nil {
+		return Address{}, fmt.Errorf(
+			"failed to make post request to buscaCEP: %w", err,
+		)
+	}
+	defer res.Body.Close()
+
+	data, _ := io.ReadAll(res.Body)
+	if res.StatusCode != http.StatusOK {
+		return Address{}, fmt.Errorf(
+			"buscaCEP status code not ok: %d\ndata: %s",
+			res.StatusCode, string(data),
+		)
+	}
+
+	var dados buscaCEPResponse
+	if err := json.Unmarshal(data, &dados); err != nil {
+		return Address{}, fmt.Errorf(
+			"failed to unmarshal buscaCEP json: %w\ndata: %s",
+			err, string(data),
+		)
+	}
+
+	if dados.Erro {
+		return Address{}, fmt.Errorf(
+			"busca cep server returned error: %s", dados.Mensagem,
+		)
+	}
+
+	if len(dados.Dados) == 0 {
+		return Address{}, ErrInvalidCEP
+	}
+
+	addr := dados.Dados[0]
+	logradouro := addr.Logradouro
+
+	logradouroParts := strings.Split(logradouro, ",")
+	if len(logradouroParts) == 1 {
+		logradouroParts = strings.Split(logradouro, "-")
+	}
+
+	var complemento string
+	if len(logradouroParts) > 1 {
+		logradouro = strings.TrimSpace(logradouroParts[0])
+		complemento = strings.TrimSpace(logradouroParts[1])
+	}
+
+	addr.Logradouro = logradouro
+	addr.Complemento = complemento
+	addr.CEP = cep
+	return addr, nil
+}
+
+func viaCEP(cep CEP) (Address, error) {
+	viaCEPURL := fmt.Sprintf("https://viacep.com.br/ws/%s/json/", cep)
+
+	res, err := http.Get(viaCEPURL)
+	if err != nil {
+		return Address{}, fmt.Errorf(
+			"failed to make get request to viaCEP: %w", err,
+		)
+	}
+	defer res.Body.Close()
+
+	data, _ := io.ReadAll(res.Body)
+	if res.StatusCode != http.StatusOK {
+		return Address{}, fmt.Errorf(
+			"viaCEP status code not ok: %d\ndata: %s",
+			res.StatusCode, string(data),
+		)
+	}
+
+	type viaCEPResponse struct {
+		Address
+		Erro bool `json:"erro"`
+	}
+
+	var dados viaCEPResponse
+	if err := json.Unmarshal(data, &dados); err != nil {
+		return Address{}, fmt.Errorf(
+			"failed to unmarshal viaCEP json: %w\ndata: %s", err, string(data),
+		)
+	}
+
+	if dados.Erro || dados.Address.CEP == "" {
+		return Address{}, ErrInvalidCEP
+	}
+
+	return dados.Address, nil
+}
+
+type unit struct{}
+
+var (
+	addresses   *cache.Cache[string, Address]
+	invalidCEPs *cache.Cache[string, unit]
+)
+
+const (
+	cacheAddressesAndCEPsFor = 2 * time.Hour
+)
+
+func init() {
+	addresses = cache.New[string, Address](cacheAddressesAndCEPsFor)
+	invalidCEPs = cache.New[string, unit](cacheAddressesAndCEPsFor)
+}
+
+// Address represents an address associated with a Brazilian CEP.
+type Address struct {
+	UF          UF     `json:"uf"`
+	CEP         CEP    `json:"cep"`
+	Localidade  string `json:"localidade"`
+	Logradouro  string `json:"logradouroDNEC"`
+	Complemento string `json:"complemento"`
+	Bairro      string `json:"bairro"`
+	NomeUnidade string `json:"nomeUnidade"`
+}
+
+func (addr Address) serializedSize() int {
+	return 2 + 1 + // uf
+		len(addr.Localidade) + 1 +
+		len(addr.Logradouro) + 1 +
+		len(addr.Complemento) + 1 +
+		len(addr.Bairro) + 1 +
+		len(addr.NomeUnidade) + 1 +
+		len(addr.CEP)
+}
+
+// Serialize converts the Address instance into a serialized string
+// representation.
+//
+// This can be used to store the address as a string on a database, for example.
+func (addr Address) Serialize() string {
+	var buf bytes.Buffer
+	buf.Grow(addr.serializedSize())
+	buf.WriteString(addr.UF.String())
+	buf.WriteRune(';')
+	buf.WriteString(addr.Localidade)
+	buf.WriteRune(';')
+	buf.WriteString(addr.Logradouro)
+	buf.WriteRune(';')
+	buf.WriteString(addr.Complemento)
+	buf.WriteRune(';')
+	buf.WriteString(addr.Bairro)
+	buf.WriteRune(';')
+	buf.WriteString(addr.NomeUnidade)
+	buf.WriteRune(';')
+	buf.WriteString(string(addr.CEP))
+	return buf.String()
+}
+
+// Deserialize parses a serialized string and populates the Address fields.
+func (addr *Address) Deserialize(str string) error {
+	parts := strings.Split(str, ";")
+	if len(parts) != 7 {
+		return fmt.Errorf(
+			"%w: invalid length: %d",
+			ErrInvalidSerializedAddress, len(parts),
+		)
+	}
+
+	uf, err := NewUFFromStr(parts[0])
+	if err != nil {
+		return fmt.Errorf(
+			"%w: unknown uf: %s",
+			ErrInvalidSerializedAddress, parts[0],
+		)
+	}
+
+	cep, err := NewCEP(parts[6])
+	if err != nil {
+		return fmt.Errorf(
+			"%w: invalid CEP: %s",
+			ErrInvalidSerializedAddress, parts[6],
+		)
+	}
+
+	addr.UF = uf
+	addr.Localidade = parts[1]
+	addr.Logradouro = parts[2]
+	addr.Complemento = parts[3]
+	addr.Bairro = parts[4]
+	addr.NomeUnidade = parts[5]
+	addr.CEP = cep
+	return nil
+}
+
+// Scan implements the sql.Scanner interface for Address.
+func (addr *Address) Scan(value any) error {
+	str, ok := value.(string)
+	if !ok {
+		return fmt.Errorf(
+			"domain: unknown type passed to Address Scan: %T",
+			value,
+		)
+	}
+
+	if err := addr.Deserialize(str); err != nil {
+		return fmt.Errorf("domain: invalid serialized Address: %w", err)
+	}
+
+	return nil
+}
+
+// Value implements the driver.Valuer interface for Address.
+func (addr Address) Value() (driver.Value, error) {
+	return addr.Serialize(), nil
+}
+
+// Validate fetches additional address information based on the associated CEP
+// and updates the Address fields.
+//
+// This method may perform requests to external APIs to retrieve address
+// details.
+func (addr *Address) Validate() error {
+	parsedAddr, err := addr.CEP.ToAddress()
+	if err != nil {
+		return err
+	}
+	*addr = parsedAddr
+	return nil
 }
