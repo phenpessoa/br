@@ -1,7 +1,7 @@
 # br
 
-This project is very early stage and still wip. Do not use it in production.
-The API may change at anytime before v1.0.0.
+**Note: This project is currently in its early stages and is a work in progress (WIP). Please refrain from using it in a production environment. The API is subject to change without prior notice until the release of v1.0.0.**
 
-The goal to this project is to provide a high performance go library to work
-with Brazilian documents.
+## Goal
+
+The aim of this project is to develop a high-performance Go library tailored for handling Brazilian documents.
