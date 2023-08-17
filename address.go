@@ -22,12 +22,12 @@ var (
 	ErrInvalidUF = errors.New("br: invalid uf passed")
 
 	// ErrInvalidCEP is returned when an invalid CEP code is passed.
-	ErrInvalidCEP = errors.New("domain: invalid cep passed")
+	ErrInvalidCEP = errors.New("br: invalid cep passed")
 
 	// ErrInvalidSerializedAddress is returned when trying to deserialize an
 	// invalid string into an Address.
 	ErrInvalidSerializedAddress = errors.New(
-		"domain: invalid serialized address",
+		"br: invalid serialized address",
 	)
 )
 
@@ -616,13 +616,13 @@ func (addr *Address) Scan(value any) error {
 	str, ok := value.(string)
 	if !ok {
 		return fmt.Errorf(
-			"domain: unknown type passed to Address Scan: %T",
+			"br: unknown type passed to Address Scan: %T",
 			value,
 		)
 	}
 
 	if err := addr.Deserialize(str); err != nil {
-		return fmt.Errorf("domain: invalid serialized Address: %w", err)
+		return fmt.Errorf("br: invalid serialized Address: %w", err)
 	}
 
 	return nil

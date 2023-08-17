@@ -10,7 +10,7 @@ import (
 
 var (
 	// ErrInvalidCNPJ is an error returned when an invalid CNPJ is encountered.
-	ErrInvalidCNPJ = errors.New("domain: invalid cnpj passed")
+	ErrInvalidCNPJ = errors.New("br: invalid cnpj passed")
 
 	cnpjFirstTable  = []int{5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2}
 	cnpjSecondTable = []int{6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2}

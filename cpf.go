@@ -10,7 +10,7 @@ import (
 
 var (
 	// ErrInvalidCPF is an error returned when an invalid CPF is encountered.
-	ErrInvalidCPF = errors.New("domain: invalid cpf passed")
+	ErrInvalidCPF = errors.New("br: invalid cpf passed")
 
 	cpfFirstTable  = []int{10, 9, 8, 7, 6, 5, 4, 3, 2}
 	cpfSecondTable = []int{11, 10, 9, 8, 7, 6, 5, 4, 3, 2}
