@@ -20,16 +20,16 @@ var (
 //
 // It removes any punctuation characters and verifies the CPF's validity using
 // checksum digits.
-func NewCPF(s string) (CPF, error) {
+func NewCPF(s string) (*CPF, error) {
 	s = strings.ReplaceAll(s, ".", "")
 	s = strings.ReplaceAll(s, "-", "")
 
 	cpf := CPF(s)
 	if !cpf.IsValid() {
-		return "", ErrInvalidCPF
+		return nil, ErrInvalidCPF
 	}
 
-	return cpf, nil
+	return &cpf, nil
 }
 
 // CPF represents a Brazilian individual CPF.
@@ -37,10 +37,14 @@ type CPF string
 
 // IsValid checks whether the provided CPF is valid based on its checksum
 // digits.
-func (cpf CPF) IsValid() bool {
-	s := string(cpf)
+func (cpf *CPF) IsValid() bool {
+	if cpf == nil {
+		return false
+	}
+	s := string(*cpf)
 	s = strings.ReplaceAll(s, ".", "")
 	s = strings.ReplaceAll(s, "-", "")
+	*cpf = CPF(s)
 
 	if len(s) != 11 {
 		return false
@@ -97,31 +101,32 @@ func (cpf CPF) IsValid() bool {
 }
 
 // String returns the formatted CPF string with punctuation as XXX.XXX.XXX-XX.
-func (cpf CPF) String() string {
+func (cpf *CPF) String() string {
 	if !cpf.IsValid() {
-		return string(cpf)
+		return string(*cpf)
 	}
 
+	s := *cpf
 	out := make([]byte, 14)
-	for i := range cpf {
+	for i := range s {
 		switch {
 		case i < 3:
-			out[i] = cpf[i]
+			out[i] = s[i]
 		case i == 3:
 			out[i] = '.'
-			out[i+1] = cpf[i]
+			out[i+1] = s[i]
 		case i < 6:
-			out[i+1] = cpf[i]
+			out[i+1] = s[i]
 		case i == 6:
 			out[i+1] = '.'
-			out[i+2] = cpf[i]
+			out[i+2] = s[i]
 		case i < 9:
-			out[i+2] = cpf[i]
+			out[i+2] = s[i]
 		case i == 9:
 			out[i+2] = '-'
-			out[i+3] = cpf[i]
+			out[i+3] = s[i]
 		default:
-			out[i+3] = cpf[i]
+			out[i+3] = s[i]
 		}
 	}
 

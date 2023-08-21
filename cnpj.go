@@ -20,17 +20,17 @@ var (
 //
 // It removes any punctuation characters and verifies the CNPJ's validity using
 // checksum digits.
-func NewCNPJ(s string) (CNPJ, error) {
+func NewCNPJ(s string) (*CNPJ, error) {
 	s = strings.ReplaceAll(s, ".", "")
 	s = strings.ReplaceAll(s, "/", "")
 	s = strings.ReplaceAll(s, "-", "")
 
 	cnpj := CNPJ(s)
 	if !cnpj.IsValid() {
-		return "", ErrInvalidCNPJ
+		return nil, ErrInvalidCNPJ
 	}
 
-	return cnpj, nil
+	return &cnpj, nil
 }
 
 // CNPJ represents a Brazilian CNPJ.
@@ -38,11 +38,15 @@ type CNPJ string
 
 // IsValid checks whether the provided CNPJ is valid based on its checksum
 // digits.
-func (cnpj CNPJ) IsValid() bool {
-	s := string(cnpj)
+func (cnpj *CNPJ) IsValid() bool {
+	if cnpj == nil {
+		return false
+	}
+	s := string(*cnpj)
 	s = strings.ReplaceAll(s, ".", "")
 	s = strings.ReplaceAll(s, "/", "")
 	s = strings.ReplaceAll(s, "-", "")
+	*cnpj = CNPJ(s)
 
 	if len(s) != 14 {
 		return false
@@ -100,37 +104,38 @@ func (cnpj CNPJ) IsValid() bool {
 
 // String returns the formatted CNPJ string with punctuation as
 // XX.XXX.XXX/XXXX-XX.
-func (cnpj CNPJ) String() string {
+func (cnpj *CNPJ) String() string {
 	if !cnpj.IsValid() {
-		return string(cnpj)
+		return string(*cnpj)
 	}
 
+	s := *cnpj
 	out := make([]byte, 18)
 
-	for i := range cnpj {
+	for i := range s {
 		switch {
 		case i < 2:
-			out[i] = cnpj[i]
+			out[i] = s[i]
 		case i == 2:
 			out[i] = '.'
-			out[i+1] = cnpj[i]
+			out[i+1] = s[i]
 		case i < 5:
-			out[i+1] = cnpj[i]
+			out[i+1] = s[i]
 		case i == 5:
 			out[i+1] = '.'
-			out[i+2] = cnpj[i]
+			out[i+2] = s[i]
 		case i < 8:
-			out[i+2] = cnpj[i]
+			out[i+2] = s[i]
 		case i == 8:
 			out[i+2] = '/'
-			out[i+3] = cnpj[i]
+			out[i+3] = s[i]
 		case i < 12:
-			out[i+3] = cnpj[i]
+			out[i+3] = s[i]
 		case i == 12:
 			out[i+3] = '-'
-			out[i+4] = cnpj[i]
+			out[i+4] = s[i]
 		default:
-			out[i+4] = cnpj[i]
+			out[i+4] = s[i]
 		}
 	}
 

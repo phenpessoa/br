@@ -12,17 +12,17 @@ var ErrInvalidPlate = errors.New("br: invalid license plate")
 // NewPlate creates a new Plate instance from a string representation.
 //
 // It removes any punctuation characters and converts the string to uppercase.
-func NewPlate(s string) (Plate, error) {
+func NewPlate(s string) (*Plate, error) {
 	s = strings.ReplaceAll(s, ".", "")
 	s = strings.ReplaceAll(s, "-", "")
 	s = strings.ToUpper(s)
 
 	plate := Plate(s)
 	if !plate.IsValid() {
-		return "", ErrInvalidPlate
+		return nil, ErrInvalidPlate
 	}
 
-	return plate, nil
+	return &plate, nil
 }
 
 // Plate represents a Brazilian vehicle license plate.
@@ -33,11 +33,15 @@ type Plate string
 //
 // IsValid will return true if the plate if either a MercoSul or a Brazilian
 // type plate.
-func (p Plate) IsValid() bool {
-	s := string(p)
+func (p *Plate) IsValid() bool {
+	if p == nil {
+		return false
+	}
+	s := string(*p)
 	s = strings.ReplaceAll(s, ".", "")
 	s = strings.ReplaceAll(s, "-", "")
 	s = strings.ToUpper(s)
+	*p = Plate(s)
 
 	if len(s) != 7 {
 		return false
@@ -70,6 +74,9 @@ func (p Plate) IsValid() bool {
 }
 
 // String returns the license plate as an uppercase formatted string.
-func (p Plate) String() string {
-	return strings.ToUpper(string(p))
+func (p *Plate) String() string {
+	if p == nil {
+		return ""
+	}
+	return strings.ToUpper(string(*p))
 }

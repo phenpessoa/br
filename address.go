@@ -309,36 +309,44 @@ type CEP string
 //
 // To check if this CEP actually represents an Address, call the CEP.ToAddress
 // method.
-func NewCEP(s string) (CEP, error) {
+func NewCEP(s string) (*CEP, error) {
 	s = strings.ReplaceAll(s, "-", "")
 	s = strings.ReplaceAll(s, ".", "")
 	cep := CEP(s)
 	if !cep.IsValid() {
-		return "", ErrInvalidCEP
+		return nil, ErrInvalidCEP
 	}
-	return cep, nil
+	return &cep, nil
 }
 
 // String returns the formatted CEP string as XXXXX-XXX.
-func (cep CEP) String() string {
+func (cep *CEP) String() string {
 	if !cep.IsValid() {
 		return ""
 	}
 
+	s := *cep
 	out := make([]byte, 9)
-	for i := range cep {
+	for i := range s {
 		switch {
 		case i < 5:
-			out[i] = cep[i]
+			out[i] = s[i]
 		case i == 5:
 			out[i] = '-'
-			out[i+1] = cep[i]
+			out[i+1] = s[i]
 		default:
-			out[i+1] = cep[i]
+			out[i+1] = s[i]
 		}
 	}
 
 	return unsafex.String(out)
+}
+
+func (cep *CEP) Len() int {
+	if cep == nil {
+		return 0
+	}
+	return len(*cep)
 }
 
 // IsValid checks whether the provided CEP is valid based on its length, digits
@@ -348,10 +356,14 @@ func (cep CEP) String() string {
 //
 // To check if this CEP actually represents an Address, call the CEP.ToAddress
 // method.
-func (cep CEP) IsValid() bool {
-	s := string(cep)
+func (cep *CEP) IsValid() bool {
+	if cep == nil {
+		return false
+	}
+	s := string(*cep)
 	s = strings.ReplaceAll(s, "-", "")
 	s = strings.ReplaceAll(s, ".", "")
+	*cep = CEP(s)
 
 	if len(s) != 8 {
 		return false
@@ -371,18 +383,18 @@ func (cep CEP) IsValid() bool {
 //
 // This method may perform requests to external APIs to fetch address details
 // based on the CEP.
-func (cep CEP) ToAddress() (addr Address, err error) {
+func (cep *CEP) ToAddress() (addr Address, err error) {
 	if !cep.IsValid() {
 		return Address{}, ErrInvalidCEP
 	}
 
-	if addr, ok := addresses.Get(string(cep)); ok {
+	if addr, ok := addresses.Get(cep.String()); ok {
 		return addr, nil
 	}
 
 	defer func() {
 		if err != nil && errors.Is(err, ErrInvalidCEP) {
-			invalidCEPs.Set(string(cep), unit{})
+			invalidCEPs.Set(cep.String(), unit{})
 		}
 	}()
 
@@ -406,11 +418,11 @@ func (cep CEP) ToAddress() (addr Address, err error) {
 		}
 	}
 
-	addresses.Set(string(cep), addr)
+	addresses.Set(cep.String(), addr)
 	return addr, nil
 }
 
-func buscaCEP(cep CEP) (Address, error) {
+func buscaCEP(cep *CEP) (Address, error) {
 	type buscaCEPResponse struct {
 		Erro     bool      `json:"erro"`
 		Mensagem string    `json:"mensagem"`
@@ -421,7 +433,7 @@ func buscaCEP(cep CEP) (Address, error) {
 	const buscaCEPURL = "https://buscacepinter.correios.com.br/app/endereco/carrega-cep-endereco.php"
 	form := url.Values{}
 	form.Set("pagina", "/app/endereco/index.php")
-	form.Set("endereco", string(cep))
+	form.Set("endereco", cep.String())
 	form.Set("tipoCEP", "ALL")
 	res, err := http.Post(
 		buscaCEPURL,
@@ -481,7 +493,7 @@ func buscaCEP(cep CEP) (Address, error) {
 	return addr, nil
 }
 
-func viaCEP(cep CEP) (Address, error) {
+func viaCEP(cep *CEP) (Address, error) {
 	viaCEPURL := fmt.Sprintf("https://viacep.com.br/ws/%s/json/", cep)
 
 	res, err := http.Get(viaCEPURL)
@@ -512,7 +524,9 @@ func viaCEP(cep CEP) (Address, error) {
 		)
 	}
 
-	if dados.Erro || dados.Address.CEP == "" {
+	if dados.Erro ||
+		dados.Address.CEP == nil ||
+		dados.Address.CEP.String() == "" {
 		return Address{}, ErrInvalidCEP
 	}
 
@@ -538,7 +552,7 @@ func init() {
 // Address represents an address associated with a Brazilian CEP.
 type Address struct {
 	UF          UF     `json:"uf"`
-	CEP         CEP    `json:"cep"`
+	CEP         *CEP   `json:"cep"`
 	Localidade  string `json:"localidade"`
 	Logradouro  string `json:"logradouroDNEC"`
 	Complemento string `json:"complemento"`
@@ -553,7 +567,7 @@ func (addr Address) serializedSize() int {
 		len(addr.Complemento) + 1 +
 		len(addr.Bairro) + 1 +
 		len(addr.NomeUnidade) + 1 +
-		len(addr.CEP)
+		addr.CEP.Len()
 }
 
 // Serialize converts the Address instance into a serialized string
@@ -575,7 +589,7 @@ func (addr Address) Serialize() string {
 	buf.WriteRune(';')
 	buf.WriteString(addr.NomeUnidade)
 	buf.WriteRune(';')
-	buf.WriteString(string(addr.CEP))
+	buf.WriteString(addr.CEP.String())
 	return buf.String()
 }
 
