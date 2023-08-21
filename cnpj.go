@@ -39,13 +39,18 @@ type CNPJ string
 // IsValid checks whether the provided CNPJ is valid based on its checksum
 // digits.
 func (cnpj CNPJ) IsValid() bool {
-	if len(cnpj) != 14 {
+	s := string(cnpj)
+	s = strings.ReplaceAll(s, ".", "")
+	s = strings.ReplaceAll(s, "/", "")
+	s = strings.ReplaceAll(s, "-", "")
+
+	if len(s) != 14 {
 		return false
 	}
 
 	buf := make([]byte, 14)
-	for i := range cnpj {
-		buf[i] = cnpj[i]
+	for i := range s {
+		buf[i] = s[i]
 	}
 
 	var sum1 int
@@ -90,7 +95,7 @@ func (cnpj CNPJ) IsValid() bool {
 		buf[13] = byte(d2) + '0'
 	}
 
-	return bytes.Equal(buf, unsafex.ByteSlice(string(cnpj)))
+	return bytes.Equal(buf, unsafex.ByteSlice(s))
 }
 
 // String returns the formatted CNPJ string with punctuation as

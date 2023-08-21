@@ -349,17 +349,21 @@ func (cep CEP) String() string {
 // To check if this CEP actually represents an Address, call the CEP.ToAddress
 // method.
 func (cep CEP) IsValid() bool {
-	if len(cep) != 8 {
+	s := string(cep)
+	s = strings.ReplaceAll(s, "-", "")
+	s = strings.ReplaceAll(s, ".", "")
+
+	if len(s) != 8 {
 		return false
 	}
 
-	for i := range cep {
-		if cep[i] < '0' || cep[i] > '9' {
+	for i := range s {
+		if s[i] < '0' || s[i] > '9' {
 			return false
 		}
 	}
 
-	return !invalidCEPs.Contains(string(cep))
+	return !invalidCEPs.Contains(s)
 }
 
 // ToAddress converts a CEP into an Address instance, retrieving address

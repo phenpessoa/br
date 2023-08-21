@@ -5,11 +5,9 @@ import (
 	"strings"
 )
 
-var (
-	// ErrInvalidPlate is an error returned when an invalid license plate is
-	// encountered.
-	ErrInvalidPlate = errors.New("br: invalid license plate")
-)
+// ErrInvalidPlate is an error returned when an invalid license plate is
+// encountered.
+var ErrInvalidPlate = errors.New("br: invalid license plate")
 
 // NewPlate creates a new Plate instance from a string representation.
 //
@@ -36,12 +34,17 @@ type Plate string
 // IsValid will return true if the plate if either a MercoSul or a Brazilian
 // type plate.
 func (p Plate) IsValid() bool {
-	if len(p) != 7 {
+	s := string(p)
+	s = strings.ReplaceAll(s, ".", "")
+	s = strings.ReplaceAll(s, "-", "")
+	s = strings.ToUpper(s)
+
+	if len(s) != 7 {
 		return false
 	}
 
-	for i := range p {
-		cur := p[i]
+	for i := range s {
+		cur := s[i]
 		switch {
 		case i < 3:
 			if cur < 'A' || cur > 'Z' {

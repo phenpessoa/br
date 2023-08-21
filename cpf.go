@@ -38,13 +38,17 @@ type CPF string
 // IsValid checks whether the provided CPF is valid based on its checksum
 // digits.
 func (cpf CPF) IsValid() bool {
-	if len(cpf) != 11 {
+	s := string(cpf)
+	s = strings.ReplaceAll(s, ".", "")
+	s = strings.ReplaceAll(s, "-", "")
+
+	if len(s) != 11 {
 		return false
 	}
 
 	buf := make([]byte, 11)
-	for i := range cpf {
-		buf[i] = cpf[i]
+	for i := range s {
+		buf[i] = s[i]
 	}
 
 	var sum1 int
@@ -89,7 +93,7 @@ func (cpf CPF) IsValid() bool {
 		buf[10] = byte(d2) + '0'
 	}
 
-	return bytes.Equal(buf, unsafex.ByteSlice(string(cpf)))
+	return bytes.Equal(buf, unsafex.ByteSlice(s))
 }
 
 // String returns the formatted CPF string with punctuation as XXX.XXX.XXX-XX.
