@@ -1,9 +1,7 @@
 package br
 
 import (
-	"bytes"
 	"errors"
-	"strings"
 
 	"github.com/phenpessoa/gutils/unsafex"
 )
@@ -18,19 +16,13 @@ var (
 
 // NewCNPJ creates a new CNPJ instance from a string representation.
 //
-// It removes any punctuation characters and verifies the CNPJ's validity using
-// checksum digits.
-func NewCNPJ(s string) (*CNPJ, error) {
-	s = strings.ReplaceAll(s, ".", "")
-	s = strings.ReplaceAll(s, "/", "")
-	s = strings.ReplaceAll(s, "-", "")
-
+// It verifies the CNPJ's validity using checksum digits.
+func NewCNPJ(s string) (CNPJ, error) {
 	cnpj := CNPJ(s)
 	if !cnpj.IsValid() {
-		return nil, ErrInvalidCNPJ
+		return "", ErrInvalidCNPJ
 	}
-
-	return &cnpj, nil
+	return cnpj, nil
 }
 
 // CNPJ represents a Brazilian CNPJ.
@@ -38,104 +30,112 @@ type CNPJ string
 
 // IsValid checks whether the provided CNPJ is valid based on its checksum
 // digits.
-func (cnpj *CNPJ) IsValid() bool {
-	if cnpj == nil {
-		return false
-	}
-	s := string(*cnpj)
-	s = strings.ReplaceAll(s, ".", "")
-	s = strings.ReplaceAll(s, "/", "")
-	s = strings.ReplaceAll(s, "-", "")
-	*cnpj = CNPJ(s)
-
-	if len(s) != 14 {
+func (cnpj CNPJ) IsValid() bool {
+	l := len(cnpj)
+	if l != 14 && l != 18 {
 		return false
 	}
 
-	buf := make([]byte, 14)
-	for i := range s {
-		buf[i] = s[i]
+	dByte, ok := iterCNPJTable(cnpj, cnpjFirstTable)
+	if !ok {
+		return false
 	}
 
-	var sum1 int
-	for i, d := range cnpjFirstTable {
-		c := int(buf[i] - '0')
-		if c < 0 || c > 9 {
-			return false
+	if cnpj[l-2] != dByte {
+		return false
+	}
+
+	dByte, ok = iterCNPJTable(cnpj, cnpjSecondTable)
+	if !ok {
+		return false
+	}
+
+	if cnpj[l-1] != dByte {
+		return false
+	}
+
+	return true
+}
+
+func iterCNPJTable(cnpj CNPJ, table []int) (byte, bool) {
+	var sum, pad, rest, d int
+
+	for i, d := range table {
+		cur := cnpj[i+pad]
+		switch cur {
+		case '.':
+			if i != 2 && i != 5 {
+				return 0, false
+			}
+			pad++
+			cur = cnpj[i+pad]
+		case '/':
+			if i != 8 {
+				return 0, false
+			}
+			pad++
+			cur = cnpj[i+pad]
+		case '-':
+			if i != 12 {
+				return 0, false
+			}
+			pad++
+			cur = cnpj[i+pad]
 		}
-		sum1 += d * c
-	}
-	rest1 := sum1 % 11
-	d1 := 0
 
-	if rest1 >= 2 {
-		d1 = 11 - rest1
-	}
-
-	if d1 == 0 {
-		buf[12] = '0'
-	} else {
-		buf[12] = byte(d1) + '0'
-	}
-
-	var sum2 int
-	for i, d := range cnpjSecondTable {
-		c := int(buf[i] - '0')
-		if c < 0 || c > 9 {
-			return false
+		if cur < '0' || cur > '9' {
+			return 0, false
 		}
-		sum2 += d * c
-	}
-	rest2 := sum2 % 11
-	d2 := 0
 
-	if rest2 >= 2 {
-		d2 = 11 - rest2
+		sum += d * int(cur-'0')
 	}
 
-	if d2 == 0 {
-		buf[13] = '0'
-	} else {
-		buf[13] = byte(d2) + '0'
+	rest = sum % 11
+
+	if rest >= 2 {
+		d = 11 - rest
 	}
 
-	return bytes.Equal(buf, unsafex.ByteSlice(s))
+	return byte(d) + '0', true
 }
 
 // String returns the formatted CNPJ string with punctuation as
 // XX.XXX.XXX/XXXX-XX.
-func (cnpj *CNPJ) String() string {
+func (cnpj CNPJ) String() string {
 	if !cnpj.IsValid() {
-		return string(*cnpj)
+		return ""
 	}
 
-	s := *cnpj
+	if len(cnpj) == 18 {
+		return string(cnpj)
+	}
+
 	out := make([]byte, 18)
 
-	for i := range s {
+	for i := range cnpj {
 		switch {
 		case i < 2:
-			out[i] = s[i]
+			out[i] = cnpj[i]
 		case i == 2:
 			out[i] = '.'
-			out[i+1] = s[i]
+			out[i+1] = cnpj[i]
 		case i < 5:
-			out[i+1] = s[i]
+			out[i+1] = cnpj[i]
 		case i == 5:
 			out[i+1] = '.'
-			out[i+2] = s[i]
+			out[i+2] = cnpj[i]
 		case i < 8:
-			out[i+2] = s[i]
+			out[i+2] = cnpj[i]
 		case i == 8:
 			out[i+2] = '/'
-			out[i+3] = s[i]
+			out[i+3] = cnpj[i]
 		case i < 12:
-			out[i+3] = s[i]
+			out[i+3] = cnpj[i]
 		case i == 12:
 			out[i+3] = '-'
-			out[i+4] = s[i]
+			out[i+4] = cnpj[i]
 		default:
-			out[i+4] = s[i]
+			out[i+4] = cnpj[i]
 		}
 	}
 
