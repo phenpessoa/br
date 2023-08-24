@@ -251,7 +251,7 @@ func (uf *UF) UnmarshalJSON(b []byte) error {
 		str = strings.ReplaceAll(str, `"`, "")
 		_uf, err := NewUFFromStr(str)
 		if err != nil {
-			return fmt.Errorf("can not unmarshal %s into uf", str)
+			return fmt.Errorf("can not unmarshal %s into uf: %w", str, err)
 		}
 		*uf = _uf
 		return nil
@@ -259,12 +259,12 @@ func (uf *UF) UnmarshalJSON(b []byte) error {
 
 	parsedCode, err := strconv.ParseInt(str, 10, 64)
 	if err != nil {
-		return fmt.Errorf("can not unmarshal %s into uf", str)
+		return fmt.Errorf("can not unmarshal %s into uf: %w", str, ErrInvalidUF)
 	}
 
 	_uf, err := NewUF(int(parsedCode))
 	if err != nil {
-		return fmt.Errorf("can not unmarshal %d into uf", parsedCode)
+		return fmt.Errorf("can not unmarshal %d into uf: %w", parsedCode, err)
 	}
 
 	*uf = _uf
