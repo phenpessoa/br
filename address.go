@@ -300,53 +300,20 @@ func (uf UF) Value() (driver.Value, error) {
 // CEP represents a Brazilian postal code (Código de Endereçamento Postal).
 type CEP string
 
-// NewCEP creates a CEP instance from a string representation and removes any
-// punctuation characters.
+// NewCEP creates a CEP instance from a string representation.
 //
 // It verifies the length of the CEP, the digits, and checks the cache for known
 // invalid CEPs. It does not make requests to APIs to validate the corresponding
-// address.
+// address if the CEP is not in cache.
 //
 // To check if this CEP actually represents an Address, call the CEP.ToAddress
 // method.
-func NewCEP(s string) (*CEP, error) {
-	s = strings.ReplaceAll(s, "-", "")
-	s = strings.ReplaceAll(s, ".", "")
+func NewCEP(s string) (CEP, error) {
 	cep := CEP(s)
 	if !cep.IsValid() {
-		return nil, ErrInvalidCEP
+		return "", ErrInvalidCEP
 	}
-	return &cep, nil
-}
-
-// String returns the formatted CEP string as XXXXX-XXX.
-func (cep *CEP) String() string {
-	if !cep.IsValid() {
-		return ""
-	}
-
-	s := *cep
-	out := make([]byte, 9)
-	for i := range s {
-		switch {
-		case i < 5:
-			out[i] = s[i]
-		case i == 5:
-			out[i] = '-'
-			out[i+1] = s[i]
-		default:
-			out[i+1] = s[i]
-		}
-	}
-
-	return unsafex.String(out)
-}
-
-func (cep *CEP) Len() int {
-	if cep == nil {
-		return 0
-	}
-	return len(*cep)
+	return cep, nil
 }
 
 // IsValid checks whether the provided CEP is valid based on its length, digits
@@ -356,26 +323,56 @@ func (cep *CEP) Len() int {
 //
 // To check if this CEP actually represents an Address, call the CEP.ToAddress
 // method.
-func (cep *CEP) IsValid() bool {
-	if cep == nil {
-		return false
-	}
-	s := string(*cep)
-	s = strings.ReplaceAll(s, "-", "")
-	s = strings.ReplaceAll(s, ".", "")
-	*cep = CEP(s)
-
-	if len(s) != 8 {
+func (cep CEP) IsValid() bool {
+	l := len(cep)
+	if l != 8 && l != 9 {
 		return false
 	}
 
-	for i := range s {
-		if s[i] < '0' || s[i] > '9' {
+	if l == 9 && cep[5] != '-' {
+		return false
+	}
+
+	var pad int
+	for i := 0; i < 8; i++ {
+		cur := cep[i+pad]
+		if i == 5 && l == 9 {
+			pad++
+			cur = cep[i+pad]
+		}
+
+		if cur < '0' || cur > '9' {
 			return false
 		}
 	}
 
-	return !invalidCEPs.Contains(s)
+	return !invalidCEPs.Contains(string(cep))
+}
+
+// String returns the formatted CEP string as XXXXX-XXX.
+func (cep CEP) String() string {
+	if !cep.IsValid() {
+		return ""
+	}
+
+	if len(cep) == 9 {
+		return string(cep)
+	}
+
+	out := make([]byte, 9)
+	for i := range cep {
+		switch {
+		case i < 5:
+			out[i] = cep[i]
+		case i == 5:
+			out[i] = '-'
+			out[i+1] = cep[i]
+		default:
+			out[i+1] = cep[i]
+		}
+	}
+
+	return unsafex.String(out)
 }
 
 // ToAddress converts a CEP into an Address instance, retrieving address
@@ -383,7 +380,7 @@ func (cep *CEP) IsValid() bool {
 //
 // This method may perform requests to external APIs to fetch address details
 // based on the CEP.
-func (cep *CEP) ToAddress() (addr Address, err error) {
+func (cep CEP) ToAddress() (addr Address, err error) {
 	if !cep.IsValid() {
 		return Address{}, ErrInvalidCEP
 	}
@@ -422,7 +419,7 @@ func (cep *CEP) ToAddress() (addr Address, err error) {
 	return addr, nil
 }
 
-func buscaCEP(cep *CEP) (Address, error) {
+func buscaCEP(cep CEP) (Address, error) {
 	type buscaCEPResponse struct {
 		Erro     bool      `json:"erro"`
 		Mensagem string    `json:"mensagem"`
@@ -493,7 +490,7 @@ func buscaCEP(cep *CEP) (Address, error) {
 	return addr, nil
 }
 
-func viaCEP(cep *CEP) (Address, error) {
+func viaCEP(cep CEP) (Address, error) {
 	viaCEPURL := fmt.Sprintf("https://viacep.com.br/ws/%s/json/", cep)
 
 	res, err := http.Get(viaCEPURL)
@@ -524,9 +521,7 @@ func viaCEP(cep *CEP) (Address, error) {
 		)
 	}
 
-	if dados.Erro ||
-		dados.Address.CEP == nil ||
-		dados.Address.CEP.String() == "" {
+	if dados.Erro || dados.Address.CEP == "" {
 		return Address{}, ErrInvalidCEP
 	}
 
@@ -552,7 +547,7 @@ func init() {
 // Address represents an address associated with a Brazilian CEP.
 type Address struct {
 	UF          UF     `json:"uf"`
-	CEP         *CEP   `json:"cep"`
+	CEP         CEP    `json:"cep"`
 	Localidade  string `json:"localidade"`
 	Logradouro  string `json:"logradouroDNEC"`
 	Complemento string `json:"complemento"`
@@ -567,7 +562,7 @@ func (addr Address) serializedSize() int {
 		len(addr.Complemento) + 1 +
 		len(addr.Bairro) + 1 +
 		len(addr.NomeUnidade) + 1 +
-		addr.CEP.Len()
+		len(addr.CEP)
 }
 
 // Serialize converts the Address instance into a serialized string
