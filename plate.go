@@ -2,7 +2,10 @@ package br
 
 import (
 	"errors"
+	"fmt"
 	"strings"
+
+	"github.com/phenpessoa/gutils/unsafex"
 )
 
 // ErrInvalidPlate is an error returned when an invalid license plate is
@@ -10,19 +13,12 @@ import (
 var ErrInvalidPlate = errors.New("br: invalid license plate")
 
 // NewPlate creates a new Plate instance from a string representation.
-//
-// It removes any punctuation characters and converts the string to uppercase.
-func NewPlate(s string) (*Plate, error) {
-	s = strings.ReplaceAll(s, ".", "")
-	s = strings.ReplaceAll(s, "-", "")
-	s = strings.ToUpper(s)
-
+func NewPlate(s string) (Plate, error) {
 	plate := Plate(s)
 	if !plate.IsValid() {
-		return nil, ErrInvalidPlate
+		return "", ErrInvalidPlate
 	}
-
-	return &plate, nil
+	return plate, nil
 }
 
 // Plate represents a Brazilian vehicle license plate.
@@ -33,38 +29,45 @@ type Plate string
 //
 // IsValid will return true if the plate if either a MercoSul or a Brazilian
 // type plate.
-func (p *Plate) IsValid() bool {
-	if p == nil {
-		return false
-	}
-	s := string(*p)
-	s = strings.ReplaceAll(s, ".", "")
-	s = strings.ReplaceAll(s, "-", "")
-	s = strings.ToUpper(s)
-	*p = Plate(s)
-
-	if len(s) != 7 {
+//
+// The formats accepted are: XXXXXXX, XXX-XXXX, XXX.XXXX
+func (p Plate) IsValid() bool {
+	l := len(p)
+	if l != 7 && l != 8 {
 		return false
 	}
 
-	for i := range s {
-		cur := s[i]
-		switch {
+	if l == 8 && p[3] != '.' && p[3] != '-' {
+		return false
+	}
+
+	var pad int
+	for i := 0; i < 7; i++ {
+		switch cur := p[i+pad]; {
 		case i < 3:
 			if cur < 'A' || cur > 'Z' {
+				fmt.Println("a")
 				return false
 			}
 		case i == 3:
+			if cur == '.' || cur == '-' {
+				pad++
+				cur = p[i+pad]
+			}
+
 			if cur < '0' || cur > '9' {
+				fmt.Println("b")
 				return false
 			}
 		case i == 4:
 			if (cur < 'A' || cur > 'Z') &&
 				(cur < '0' || cur > '9') {
+				fmt.Println("c")
 				return false
 			}
 		default:
 			if cur < '0' || cur > '9' {
+				fmt.Println("d")
 				return false
 			}
 		}
@@ -74,9 +77,35 @@ func (p *Plate) IsValid() bool {
 }
 
 // String returns the license plate as an uppercase formatted string.
-func (p *Plate) String() string {
-	if p == nil {
+//
+// String always returns the plate in the XXX-XXXX format and in uppercase.
+func (p Plate) String() string {
+	if !p.IsValid() {
 		return ""
 	}
-	return strings.ToUpper(string(*p))
+
+	if len(p) == 8 {
+		if strings.ContainsRune(string(p), '-') {
+			return strings.ToUpper(string(p))
+		}
+
+		out := make([]byte, 8)
+		copy(out, p)
+		out[3] = '-'
+		return strings.ToUpper(unsafex.String(out))
+	}
+
+	out := make([]byte, 8)
+	for i := range out {
+		switch {
+		case i < 3:
+			out[i] = p[i]
+		case i == 3:
+			out[i] = '-'
+		default:
+			out[i] = p[i-1]
+		}
+	}
+
+	return strings.ToUpper(unsafex.String(out))
 }
