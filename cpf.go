@@ -1,9 +1,7 @@
 package br
 
 import (
-	"bytes"
 	"errors"
-	"strings"
 
 	"github.com/phenpessoa/gutils/unsafex"
 )
@@ -18,115 +16,113 @@ var (
 
 // NewCPF creates a new CPF instance from a string representation.
 //
-// It removes any punctuation characters and verifies the CPF's validity using
-// checksum digits.
-func NewCPF(s string) (*CPF, error) {
-	s = strings.ReplaceAll(s, ".", "")
-	s = strings.ReplaceAll(s, "-", "")
-
+// It verifies the CPF's validity using checksum digits.
+func NewCPF(s string) (CPF, error) {
 	cpf := CPF(s)
 	if !cpf.IsValid() {
-		return nil, ErrInvalidCPF
+		return "", ErrInvalidCPF
 	}
-
-	return &cpf, nil
+	return cpf, nil
 }
 
-// CPF represents a Brazilian individual CPF.
+// CPF represents a Brazilian CPF.
 type CPF string
 
 // IsValid checks whether the provided CPF is valid based on its checksum
 // digits.
-func (cpf *CPF) IsValid() bool {
-	if cpf == nil {
-		return false
-	}
-	s := string(*cpf)
-	s = strings.ReplaceAll(s, ".", "")
-	s = strings.ReplaceAll(s, "-", "")
-	*cpf = CPF(s)
-
-	if len(s) != 11 {
+func (cpf CPF) IsValid() bool {
+	l := len(cpf)
+	if l != 11 && l != 14 {
 		return false
 	}
 
-	buf := make([]byte, 11)
-	for i := range s {
-		buf[i] = s[i]
+	dByte, ok := iterCPFTable(cpf, cpfFirstTable)
+	if !ok {
+		return false
 	}
 
-	var sum1 int
-	for i, d := range cpfFirstTable {
-		c := int(buf[i] - '0')
-		if c < 0 || c > 9 {
-			return false
+	if cpf[l-2] != dByte {
+		return false
+	}
+
+	dByte, ok = iterCPFTable(cpf, cpfSecondTable)
+	if !ok {
+		return false
+	}
+
+	if cpf[l-1] != dByte {
+		return false
+	}
+
+	return true
+}
+
+func iterCPFTable(cpf CPF, table []int) (byte, bool) {
+	var sum, pad, rest, d int
+
+	for i, d := range table {
+		cur := cpf[i+pad]
+		switch cur {
+		case '.':
+			if i != 3 && i != 6 {
+				return 0, false
+			}
+			pad++
+			cur = cpf[i+pad]
+		case '-':
+			if i != 9 {
+				return 0, false
+			}
+			pad++
+			cur = cpf[i+pad]
 		}
-		sum1 += d * c
-	}
-	rest1 := sum1 % 11
-	d1 := 0
 
-	if rest1 >= 2 {
-		d1 = 11 - rest1
-	}
-
-	if d1 == 0 {
-		buf[9] = '0'
-	} else {
-		buf[9] = byte(d1) + '0'
-	}
-
-	var sum2 int
-	for i, d := range cpfSecondTable {
-		c := int(buf[i] - '0')
-		if c < 0 || c > 9 {
-			return false
+		if cur < '0' || cur > '9' {
+			return 0, false
 		}
-		sum2 += d * c
-	}
-	rest2 := sum2 % 11
-	d2 := 0
 
-	if rest2 >= 2 {
-		d2 = 11 - rest2
+		sum += d * int(cur-'0')
 	}
 
-	if d2 == 0 {
-		buf[10] = '0'
-	} else {
-		buf[10] = byte(d2) + '0'
+	rest = sum % 11
+
+	if rest >= 2 {
+		d = 11 - rest
 	}
 
-	return bytes.Equal(buf, unsafex.ByteSlice(s))
+	return byte(d) + '0', true
 }
 
 // String returns the formatted CPF string with punctuation as XXX.XXX.XXX-XX.
-func (cpf *CPF) String() string {
+func (cpf CPF) String() string {
 	if !cpf.IsValid() {
-		return string(*cpf)
+		return ""
 	}
 
-	s := *cpf
+	if len(cpf) == 14 {
+		return string(cpf)
+	}
+
 	out := make([]byte, 14)
-	for i := range s {
+	for i := range cpf {
 		switch {
 		case i < 3:
-			out[i] = s[i]
+			out[i] = cpf[i]
 		case i == 3:
 			out[i] = '.'
-			out[i+1] = s[i]
+			out[i+1] = cpf[i]
 		case i < 6:
-			out[i+1] = s[i]
+			out[i+1] = cpf[i]
 		case i == 6:
 			out[i+1] = '.'
-			out[i+2] = s[i]
+			out[i+2] = cpf[i]
 		case i < 9:
-			out[i+2] = s[i]
+			out[i+2] = cpf[i]
 		case i == 9:
 			out[i+2] = '-'
-			out[i+3] = s[i]
+			out[i+3] = cpf[i]
 		default:
-			out[i+3] = s[i]
+			out[i+3] = cpf[i]
 		}
 	}
 
