@@ -8,9 +8,13 @@ import (
 )
 
 var (
+	// ErrInvalidCNS is an error returned when an invalid CNS is encountered.
 	ErrInvalidCNS = errors.New("br: invalid cns passed")
 )
 
+// NewCNS creates a new CNS instance from a string representation.
+//
+// It verifies the CNS's validity using checksum digits.
 func NewCNS(s string) (CNS, error) {
 	cns := CNS(s)
 	if !cns.IsValid() {
@@ -19,8 +23,11 @@ func NewCNS(s string) (CNS, error) {
 	return cns, nil
 }
 
+// CNS represents a Brazilian CNS.
 type CNS string
 
+// IsValid checks whether the provided CNS is valid based on its checksum
+// digits.
 func (cns CNS) IsValid() bool {
 	if len(cns) != 15 && len(cns) != 18 {
 		return false
@@ -51,6 +58,7 @@ func (cns CNS) IsValid() bool {
 	return sum%11 == 0
 }
 
+// String returns the CNS formatted as XXX XXXX XXXX XXXX.
 func (cns CNS) String() string {
 	if !cns.IsValid() {
 		return ""
