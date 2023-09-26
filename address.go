@@ -556,12 +556,12 @@ type Address struct {
 }
 
 func (addr Address) serializedSize() int {
-	return 2 + 1 + // uf
-		len(addr.Localidade) + 1 +
-		len(addr.Logradouro) + 1 +
-		len(addr.Complemento) + 1 +
-		len(addr.Bairro) + 1 +
-		len(addr.NomeUnidade) + 1 +
+	return 2 + 5 + // uf
+		len(addr.Localidade) + 5 +
+		len(addr.Logradouro) + 5 +
+		len(addr.Complemento) + 5 +
+		len(addr.Bairro) + 5 +
+		len(addr.NomeUnidade) + 5 +
 		len(addr.CEP)
 }
 
@@ -573,24 +573,24 @@ func (addr Address) Serialize() string {
 	var buf bytes.Buffer
 	buf.Grow(addr.serializedSize())
 	buf.WriteString(addr.UF.String())
-	buf.WriteRune(';')
+	buf.WriteString("<pbr>")
 	buf.WriteString(addr.Localidade)
-	buf.WriteRune(';')
+	buf.WriteString("<pbr>")
 	buf.WriteString(addr.Logradouro)
-	buf.WriteRune(';')
+	buf.WriteString("<pbr>")
 	buf.WriteString(addr.Complemento)
-	buf.WriteRune(';')
+	buf.WriteString("<pbr>")
 	buf.WriteString(addr.Bairro)
-	buf.WriteRune(';')
+	buf.WriteString("<pbr>")
 	buf.WriteString(addr.NomeUnidade)
-	buf.WriteRune(';')
+	buf.WriteString("<pbr>")
 	buf.WriteString(addr.CEP.String())
 	return buf.String()
 }
 
 // Deserialize parses a serialized string and populates the Address fields.
 func (addr *Address) Deserialize(str string) error {
-	parts := strings.Split(str, ";")
+	parts := strings.Split(str, "<pbr>")
 	if len(parts) != 7 {
 		return fmt.Errorf(
 			"%w: invalid length: %d",
