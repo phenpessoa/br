@@ -50,11 +50,7 @@ func (cpf CPF) IsValid() bool {
 		return false
 	}
 
-	if cpf[l-1] != dByte {
-		return false
-	}
-
-	return true
+	return cpf[l-1] == dByte
 }
 
 func iterCPFTable(cpf CPF, table []int) (byte, bool) {

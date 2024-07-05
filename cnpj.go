@@ -2,6 +2,7 @@ package br
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/phenpessoa/gutils/unsafex"
 )
@@ -40,7 +41,6 @@ func (cnpj CNPJ) IsValid() bool {
 	if !ok {
 		return false
 	}
-
 	if cnpj[l-2] != dByte {
 		return false
 	}
@@ -50,11 +50,7 @@ func (cnpj CNPJ) IsValid() bool {
 		return false
 	}
 
-	if cnpj[l-1] != dByte {
-		return false
-	}
-
-	return true
+	return cnpj[l-1] == dByte
 }
 
 func iterCNPJTable(cnpj CNPJ, table []int) (byte, bool) {
@@ -83,7 +79,9 @@ func iterCNPJTable(cnpj CNPJ, table []int) (byte, bool) {
 			cur = cnpj[i+pad]
 		}
 
-		if cur < '0' || cur > '9' {
+		cur = asciiLowerToUpper(cur)
+
+		if cur < '0' || (cur > '9' && cur < 'A') || cur > 'Z' {
 			return 0, false
 		}
 
@@ -107,37 +105,46 @@ func (cnpj CNPJ) String() string {
 	}
 
 	if len(cnpj) == 18 {
-		return string(cnpj)
+		return strings.ToUpper(string(cnpj))
 	}
 
 	out := make([]byte, 18)
 
 	for i := range cnpj {
+		cur := asciiLowerToUpper(cnpj[i])
+
 		switch {
 		case i < 2:
-			out[i] = cnpj[i]
+			out[i] = cur
 		case i == 2:
 			out[i] = '.'
-			out[i+1] = cnpj[i]
+			out[i+1] = cur
 		case i < 5:
-			out[i+1] = cnpj[i]
+			out[i+1] = cur
 		case i == 5:
 			out[i+1] = '.'
-			out[i+2] = cnpj[i]
+			out[i+2] = cur
 		case i < 8:
-			out[i+2] = cnpj[i]
+			out[i+2] = cur
 		case i == 8:
 			out[i+2] = '/'
-			out[i+3] = cnpj[i]
+			out[i+3] = cur
 		case i < 12:
-			out[i+3] = cnpj[i]
+			out[i+3] = cur
 		case i == 12:
 			out[i+3] = '-'
-			out[i+4] = cnpj[i]
+			out[i+4] = cur
 		default:
-			out[i+4] = cnpj[i]
+			out[i+4] = cur
 		}
 	}
 
 	return unsafex.String(out)
+}
+
+func asciiLowerToUpper(b byte) byte {
+	if b >= 'a' && b <= 'z' {
+		b -= 'a' - 'A'
+	}
+	return b
 }

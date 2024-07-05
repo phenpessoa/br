@@ -2,7 +2,6 @@ package br
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/phenpessoa/gutils/unsafex"
@@ -46,7 +45,6 @@ func (p Plate) IsValid() bool {
 		switch cur := p[i+pad]; {
 		case i < 3:
 			if cur < 'A' || cur > 'Z' {
-				fmt.Println("a")
 				return false
 			}
 		case i == 3:
@@ -56,18 +54,15 @@ func (p Plate) IsValid() bool {
 			}
 
 			if cur < '0' || cur > '9' {
-				fmt.Println("b")
 				return false
 			}
 		case i == 4:
 			if (cur < 'A' || cur > 'Z') &&
 				(cur < '0' || cur > '9') {
-				fmt.Println("c")
 				return false
 			}
 		default:
 			if cur < '0' || cur > '9' {
-				fmt.Println("d")
 				return false
 			}
 		}
