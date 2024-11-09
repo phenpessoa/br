@@ -375,6 +375,10 @@ func (cep CEP) String() string {
 	return unsafex.String(out)
 }
 
+func (cep CEP) Value() (driver.Value, error) {
+	return cep.String(), nil
+}
+
 // ToAddress converts a CEP into an Address instance, retrieving address
 // information associated with the CEP.
 //

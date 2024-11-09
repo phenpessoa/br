@@ -1,16 +1,15 @@
 package br
 
 import (
+	"database/sql/driver"
 	"errors"
 	"unicode"
 
 	"github.com/phenpessoa/gutils/unsafex"
 )
 
-var (
-	// ErrInvalidCNS is an error returned when an invalid CNS is encountered.
-	ErrInvalidCNS = errors.New("br: invalid cns passed")
-)
+// ErrInvalidCNS is an error returned when an invalid CNS is encountered.
+var ErrInvalidCNS = errors.New("br: invalid cns passed")
 
 // NewCNS creates a new CNS instance from a string representation.
 //
@@ -91,4 +90,8 @@ func isFirstCNSDigitValid(d byte) bool {
 	default:
 		return false
 	}
+}
+
+func (cns CNS) Value() (driver.Value, error) {
+	return cns.String(), nil
 }

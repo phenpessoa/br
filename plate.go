@@ -1,6 +1,7 @@
 package br
 
 import (
+	"database/sql/driver"
 	"errors"
 	"strings"
 
@@ -103,4 +104,8 @@ func (p Plate) String() string {
 	}
 
 	return strings.ToUpper(unsafex.String(out))
+}
+
+func (p Plate) Value() (driver.Value, error) {
+	return p.String(), nil
 }

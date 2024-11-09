@@ -1,6 +1,7 @@
 package br
 
 import (
+	"database/sql/driver"
 	"errors"
 
 	"github.com/phenpessoa/gutils/unsafex"
@@ -123,4 +124,8 @@ func (cpf CPF) String() string {
 	}
 
 	return unsafex.String(out)
+}
+
+func (c CPF) Value() (driver.Value, error) {
+	return c.String(), nil
 }

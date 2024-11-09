@@ -1,6 +1,7 @@
 package br
 
 import (
+	"database/sql/driver"
 	"errors"
 	"strings"
 
@@ -147,4 +148,8 @@ func asciiLowerToUpper(b byte) byte {
 		b -= 'a' - 'A'
 	}
 	return b
+}
+
+func (cnpj CNPJ) Value() (driver.Value, error) {
+	return cnpj.String(), nil
 }
