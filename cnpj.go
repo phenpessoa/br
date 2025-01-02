@@ -82,7 +82,7 @@ func iterCNPJTable(cnpj CNPJ, table []int) (byte, bool) {
 
 		cur = asciiLowerToUpper(cur)
 
-		if cur < '0' || (cur > '9' && cur < 'A') || cur > 'Z' {
+		if !isAlphaNumericalUpper(cur) {
 			return 0, false
 		}
 
@@ -141,13 +141,6 @@ func (cnpj CNPJ) String() string {
 	}
 
 	return unsafex.String(out)
-}
-
-func asciiLowerToUpper(b byte) byte {
-	if b >= 'a' && b <= 'z' {
-		b -= 'a' - 'A'
-	}
-	return b
 }
 
 func (cnpj CNPJ) Value() (driver.Value, error) {

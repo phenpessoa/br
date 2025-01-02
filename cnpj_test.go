@@ -2,8 +2,6 @@ package br
 
 import "testing"
 
-var sink bool
-
 func BenchmarkCNPJ_IsValid(b *testing.B) {
 	const cnpjPetrobras = CNPJ("33.000.167/1002-46")
 	if !cnpjPetrobras.IsValid() {
@@ -12,7 +10,7 @@ func BenchmarkCNPJ_IsValid(b *testing.B) {
 	}
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		sink = cnpjPetrobras.IsValid()
+		boolSink = cnpjPetrobras.IsValid()
 	}
 }
 

@@ -2,7 +2,7 @@ package br
 
 import "testing"
 
-func BenchmarkCPF_IsValid(b *testing.B) {
+func BenchmarkCPF_IsValid14(b *testing.B) {
 	const cpfBolsonaro = CPF("453.178.287-91")
 	if !cpfBolsonaro.IsValid() {
 		b.Error("invalid cpfBolsonaro on benchmark")
@@ -10,7 +10,67 @@ func BenchmarkCPF_IsValid(b *testing.B) {
 	}
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		sink = cpfBolsonaro.IsValid()
+		boolSink = cpfBolsonaro.IsValid()
+	}
+}
+
+func BenchmarkCPF_IsValid11(b *testing.B) {
+	const cpfBolsonaro = CPF("45317828791")
+	if !cpfBolsonaro.IsValid() {
+		b.Error("invalid cpfBolsonaro on benchmark")
+		b.FailNow()
+	}
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		boolSink = cpfBolsonaro.IsValid()
+	}
+}
+
+func BenchmarkCPF_IsValid14Invalid(b *testing.B) {
+	const cpfBolsonaro = CPF("453.178.287-92")
+	if cpfBolsonaro.IsValid() {
+		b.Error("valid cpfBolsonaro on benchmark")
+		b.FailNow()
+	}
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		boolSink = cpfBolsonaro.IsValid()
+	}
+}
+
+func BenchmarkCPF_IsValid11Invalid(b *testing.B) {
+	const cpfBolsonaro = CPF("45317828792")
+	if cpfBolsonaro.IsValid() {
+		b.Error("valid cpfBolsonaro on benchmark")
+		b.FailNow()
+	}
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		boolSink = cpfBolsonaro.IsValid()
+	}
+}
+
+func BenchmarkCPF_String14(b *testing.B) {
+	const cpfBolsonaro = CPF("453.178.287-91")
+	if !cpfBolsonaro.IsValid() {
+		b.Error("invalid cpfBolsonaro on benchmark")
+		b.FailNow()
+	}
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		stringSink = cpfBolsonaro.String()
+	}
+}
+
+func BenchmarkCPF_String11(b *testing.B) {
+	const cpfBolsonaro = CPF("45317828791")
+	if !cpfBolsonaro.IsValid() {
+		b.Error("invalid cpfBolsonaro on benchmark")
+		b.FailNow()
+	}
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		stringSink = cpfBolsonaro.String()
 	}
 }
 
@@ -37,7 +97,7 @@ func TestCPF_IsValid(t *testing.T) {
 		},
 		{
 			name:  "invalid first digit raw CPF Bolsonaro",
-			cpf:   CPF("453.178.287-81"),
+			cpf:   CPF("45317828781"),
 			valid: false,
 		},
 		{
@@ -47,7 +107,7 @@ func TestCPF_IsValid(t *testing.T) {
 		},
 		{
 			name:  "invalid second digit raw CPF Bolsonaro",
-			cpf:   CPF("453.178.287-92"),
+			cpf:   CPF("45317828792"),
 			valid: false,
 		},
 	} {

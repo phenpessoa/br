@@ -47,7 +47,7 @@ func (cns CNS) IsValid() bool {
 			cur = cns[i+pad]
 		}
 
-		if cur < '0' || cur > '9' {
+		if !isDigit(cur) {
 			return false
 		}
 
