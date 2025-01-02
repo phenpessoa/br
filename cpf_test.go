@@ -2,6 +2,15 @@ package br
 
 import "testing"
 
+var cpfSink CPF
+
+func BenchmarkGenerateCPF(b *testing.B) {
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		cpfSink = GenerateCPF()
+	}
+}
+
 func BenchmarkCPF_IsValid14(b *testing.B) {
 	const cpfBolsonaro = CPF("453.178.287-91")
 	if !cpfBolsonaro.IsValid() {
@@ -71,6 +80,14 @@ func BenchmarkCPF_String11(b *testing.B) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		stringSink = cpfBolsonaro.String()
+	}
+}
+
+func TestGenerateCPF(t *testing.T) {
+	for range 1_000_000 {
+		if cpf := GenerateCPF(); !cpf.IsValid() {
+			t.Errorf("invalid CPF generated: %s", string(cpf))
+		}
 	}
 }
 

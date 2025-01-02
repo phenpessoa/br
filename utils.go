@@ -1,5 +1,10 @@
 package br
 
+import (
+	"math/bits"
+	"math/rand/v2"
+)
+
 func isDigit(b byte) bool {
 	return b >= '0' && b <= '9'
 }
@@ -17,4 +22,22 @@ func asciiLowerToUpper(b byte) byte {
 		b -= 'a' - 'A'
 	}
 	return b
+}
+
+var pcg = rand.NewPCG(rand.Uint64(), rand.Uint64())
+
+func randomDigit() byte {
+	var n uint64 = '9' - '0'
+
+	// This code here is taken from the stdlib.
+	// You can check it at the math/rand/v2 package under func '(r *Rand) uint64n(n uint64) uint64'.
+	hi, lo := bits.Mul64(pcg.Uint64(), n)
+	if lo < n {
+		thresh := -n % n
+		for lo < thresh {
+			hi, lo = bits.Mul64(pcg.Uint64(), n)
+		}
+	}
+
+	return byte(hi) + '0'
 }

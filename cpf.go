@@ -3,15 +3,11 @@ package br
 import (
 	"database/sql/driver"
 	"errors"
+	"math/rand/v2"
 )
 
-var (
-	// ErrInvalidCPF is an error returned when an invalid CPF is encountered.
-	ErrInvalidCPF = errors.New("br: invalid cpf passed")
-
-	cpfFirstTable  = []int{10, 9, 8, 7, 6, 5, 4, 3, 2}
-	cpfSecondTable = []int{11, 10, 9, 8, 7, 6, 5, 4, 3, 2}
-)
+// CPF represents a Brazilian CPF.
+type CPF string
 
 // NewCPF creates a new CPF instance from a string representation.
 //
@@ -24,8 +20,40 @@ func NewCPF(s string) (CPF, error) {
 	return cpf, nil
 }
 
-// CPF represents a Brazilian CPF.
-type CPF string
+func GenerateCPF() CPF {
+	data := make([]byte, 14)
+	data[3] = '.'
+	data[7] = '.'
+	data[11] = '-'
+
+	rand.Int32N(2)
+
+	for i := range 3 {
+		data[i] = randomDigit()
+	}
+
+	for i := 4; i < 7; i++ {
+		data[i] = randomDigit()
+	}
+
+	for i := 8; i < 11; i++ {
+		data[i] = randomDigit()
+	}
+
+	data[12], _ = iterFirst14(data)
+	data[13], _ = iterSecond14(data)
+
+	return CPF(string(data))
+}
+
+// ErrInvalidCPF is an error returned when an invalid CPF is encountered.
+var ErrInvalidCPF = errors.New("br: invalid cpf passed")
+
+// cpf tables
+var (
+	cpfFirstTable  = []int{10, 9, 8, 7, 6, 5, 4, 3, 2}
+	cpfSecondTable = []int{11, 10, 9, 8, 7, 6, 5, 4, 3, 2}
+)
 
 // IsValid checks whether the provided CPF is valid based on its checksum
 // digits.
@@ -72,7 +100,7 @@ func (cpf CPF) IsValid() bool {
 	}
 }
 
-func iterFirst14(cpf CPF) (byte, bool) {
+func iterFirst14[T string | CPF | []byte](cpf T) (byte, bool) {
 	if len(cpf) != 14 || len(cpfFirstTable) != 9 {
 		panic("not 14 or 9")
 	}
@@ -112,7 +140,7 @@ func iterFirst14(cpf CPF) (byte, bool) {
 	return byte(out) + '0', true
 }
 
-func iterSecond14(cpf CPF) (byte, bool) {
+func iterSecond14[T string | CPF | []byte](cpf T) (byte, bool) {
 	if len(cpf) != 14 || len(cpfSecondTable) != 10 {
 		panic("not 14 or 10")
 	}
@@ -158,7 +186,7 @@ func iterSecond14(cpf CPF) (byte, bool) {
 	return byte(out) + '0', true
 }
 
-func iterFirst11(cpf CPF) (byte, bool) {
+func iterFirst11[T string | CPF | []byte](cpf T) (byte, bool) {
 	if len(cpf) != 11 || len(cpfFirstTable) != 9 {
 		panic("not 11 or 9")
 	}
@@ -182,7 +210,7 @@ func iterFirst11(cpf CPF) (byte, bool) {
 	return byte(out) + '0', true
 }
 
-func iterSecond11(cpf CPF) (byte, bool) {
+func iterSecond11[T string | CPF | []byte](cpf T) (byte, bool) {
 	if len(cpf) != 11 || len(cpfSecondTable) != 10 {
 		panic("not 11 or 10")
 	}
