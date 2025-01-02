@@ -12,74 +12,74 @@ func BenchmarkGenerateCPF(b *testing.B) {
 }
 
 func BenchmarkCPF_IsValid14(b *testing.B) {
-	const cpfBolsonaro = CPF("453.178.287-91")
-	if !cpfBolsonaro.IsValid() {
-		b.Error("invalid cpfBolsonaro on benchmark")
+	const cpf = CPF("453.178.287-91")
+	if !cpf.IsValid() {
+		b.Error("invalid cpf on benchmark")
 		b.FailNow()
 	}
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		boolSink = cpfBolsonaro.IsValid()
+		boolSink = cpf.IsValid()
 	}
 }
 
 func BenchmarkCPF_IsValid11(b *testing.B) {
-	const cpfBolsonaro = CPF("45317828791")
-	if !cpfBolsonaro.IsValid() {
-		b.Error("invalid cpfBolsonaro on benchmark")
+	const cpf = CPF("45317828791")
+	if !cpf.IsValid() {
+		b.Error("invalid cpf on benchmark")
 		b.FailNow()
 	}
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		boolSink = cpfBolsonaro.IsValid()
+		boolSink = cpf.IsValid()
 	}
 }
 
 func BenchmarkCPF_IsValid14Invalid(b *testing.B) {
-	const cpfBolsonaro = CPF("453.178.287-92")
-	if cpfBolsonaro.IsValid() {
-		b.Error("valid cpfBolsonaro on benchmark")
+	const cpf = CPF("453.178.287-92")
+	if cpf.IsValid() {
+		b.Error("valid cpf on benchmark")
 		b.FailNow()
 	}
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		boolSink = cpfBolsonaro.IsValid()
+		boolSink = cpf.IsValid()
 	}
 }
 
 func BenchmarkCPF_IsValid11Invalid(b *testing.B) {
-	const cpfBolsonaro = CPF("45317828792")
-	if cpfBolsonaro.IsValid() {
-		b.Error("valid cpfBolsonaro on benchmark")
+	const cpf = CPF("45317828792")
+	if cpf.IsValid() {
+		b.Error("valid cpf on benchmark")
 		b.FailNow()
 	}
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		boolSink = cpfBolsonaro.IsValid()
+		boolSink = cpf.IsValid()
 	}
 }
 
 func BenchmarkCPF_String14(b *testing.B) {
-	const cpfBolsonaro = CPF("453.178.287-91")
-	if !cpfBolsonaro.IsValid() {
-		b.Error("invalid cpfBolsonaro on benchmark")
+	const cpf = CPF("453.178.287-91")
+	if !cpf.IsValid() {
+		b.Error("invalid cpf on benchmark")
 		b.FailNow()
 	}
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		stringSink = cpfBolsonaro.String()
+		stringSink = cpf.String()
 	}
 }
 
 func BenchmarkCPF_String11(b *testing.B) {
-	const cpfBolsonaro = CPF("45317828791")
-	if !cpfBolsonaro.IsValid() {
-		b.Error("invalid cpfBolsonaro on benchmark")
+	const cpf = CPF("45317828791")
+	if !cpf.IsValid() {
+		b.Error("invalid cpf on benchmark")
 		b.FailNow()
 	}
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		stringSink = cpfBolsonaro.String()
+		stringSink = cpf.String()
 	}
 }
 
@@ -98,33 +98,53 @@ func TestCPF_IsValid(t *testing.T) {
 		valid bool
 	}{
 		{
-			name:  "formatted CPF Bolsonaro",
+			name:  "formatted CPF",
 			cpf:   CPF("453.178.287-91"),
 			valid: true,
 		},
 		{
-			name:  "raw CPF Bolsonaro",
+			name:  "raw CPF",
 			cpf:   CPF("45317828791"),
 			valid: true,
 		},
 		{
-			name:  "invalid first digit formatted CPF Bolsonaro",
+			name:  "invalid first digit formatted CPF",
 			cpf:   CPF("453.178.287-81"),
 			valid: false,
 		},
 		{
-			name:  "invalid first digit raw CPF Bolsonaro",
+			name:  "invalid first digit raw CPF",
 			cpf:   CPF("45317828781"),
 			valid: false,
 		},
 		{
-			name:  "invalid second digit formatted CPF Bolsonaro",
+			name:  "invalid second digit formatted CPF",
 			cpf:   CPF("453.178.287-92"),
 			valid: false,
 		},
 		{
-			name:  "invalid second digit raw CPF Bolsonaro",
+			name:  "invalid second digit raw CPF",
 			cpf:   CPF("45317828792"),
+			valid: false,
+		},
+		{
+			name:  "empty cpf",
+			cpf:   CPF(""),
+			valid: false,
+		},
+		{
+			name:  "incorrect length cpf",
+			cpf:   CPF("123"),
+			valid: false,
+		},
+		{
+			name:  "invalid characters",
+			cpf:   CPF("abc.def.ghi-jk"),
+			valid: false,
+		},
+		{
+			name:  "invalid separators",
+			cpf:   CPF("453-178-287.92"),
 			valid: false,
 		},
 	} {
@@ -146,14 +166,24 @@ func TestCPF_String(t *testing.T) {
 		want string
 	}{
 		{
-			name: "formatted CPF Bolsonaro",
+			name: "formatted CPF",
 			cpf:  CPF("453.178.287-91"),
 			want: "453.178.287-91",
 		},
 		{
-			name: "raw CPF Bolsonaro",
+			name: "raw CPF",
 			cpf:  CPF("45317828791"),
 			want: "453.178.287-91",
+		},
+		{
+			name: "empty CPF",
+			cpf:  CPF(""),
+			want: "",
+		},
+		{
+			name: "invalid",
+			cpf:  CPF("123"),
+			want: "",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
