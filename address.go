@@ -341,11 +341,10 @@ func (cep CEP) IsValid() bool {
 			cur = cep[i+pad]
 		}
 
-		if cur < '0' || cur > '9' {
+		if !isDigit(cur) {
 			return false
 		}
 	}
-
 	return !invalidCEPs.Contains(string(cep))
 }
 

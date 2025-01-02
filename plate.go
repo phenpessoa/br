@@ -45,7 +45,7 @@ func (p Plate) IsValid() bool {
 	for i := 0; i < 7; i++ {
 		switch cur := p[i+pad]; {
 		case i < 3:
-			if cur < 'A' || cur > 'Z' {
+			if !isAlphaUpper(cur) {
 				return false
 			}
 		case i == 3:
@@ -54,16 +54,15 @@ func (p Plate) IsValid() bool {
 				cur = p[i+pad]
 			}
 
-			if cur < '0' || cur > '9' {
+			if !isDigit(cur) {
 				return false
 			}
 		case i == 4:
-			if (cur < 'A' || cur > 'Z') &&
-				(cur < '0' || cur > '9') {
+			if !isAlphaNumericalUpper(cur) {
 				return false
 			}
 		default:
-			if cur < '0' || cur > '9' {
+			if !isDigit(cur) {
 				return false
 			}
 		}

@@ -10,7 +10,7 @@ func BenchmarkPlate_IsValid(b *testing.B) {
 	}
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		sink = plate.IsValid()
+		boolSink = plate.IsValid()
 	}
 }
 

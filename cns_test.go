@@ -13,7 +13,7 @@ func BenchmarkCNS_IsValid(b *testing.B) {
 	}
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		sink = randomCNS.IsValid()
+		boolSink = randomCNS.IsValid()
 	}
 }
 
