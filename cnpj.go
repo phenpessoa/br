@@ -4,8 +4,6 @@ import (
 	"database/sql/driver"
 	"errors"
 	"strings"
-
-	"github.com/phenpessoa/gutils/unsafex"
 )
 
 // CNPJ represents a Brazilian CNPJ.
@@ -269,38 +267,27 @@ func (cnpj CNPJ) String() string {
 		return strings.ToUpper(string(cnpj))
 	}
 
-	out := make([]byte, 18)
-
-	for i := range cnpj {
-		cur := asciiLowerToUpper(cnpj[i])
-
-		switch {
-		case i < 2:
-			out[i] = cur
-		case i == 2:
-			out[i] = '.'
-			out[i+1] = cur
-		case i < 5:
-			out[i+1] = cur
-		case i == 5:
-			out[i+1] = '.'
-			out[i+2] = cur
-		case i < 8:
-			out[i+2] = cur
-		case i == 8:
-			out[i+2] = '/'
-			out[i+3] = cur
-		case i < 12:
-			out[i+3] = cur
-		case i == 12:
-			out[i+3] = '-'
-			out[i+4] = cur
-		default:
-			out[i+4] = cur
-		}
+	if len(cnpj) != 14 {
+		return ""
 	}
 
-	return unsafex.String(out)
+	out := make([]byte, 18)
+	out[2] = '.'
+	out[6] = '.'
+	out[10] = '/'
+	out[15] = '-'
+
+	copy(out[0:2], cnpj[0:2])
+	copy(out[3:6], cnpj[2:5])
+	copy(out[7:10], cnpj[5:8])
+	copy(out[11:15], cnpj[8:12])
+	copy(out[16:18], cnpj[12:14])
+
+	for i, d := range out {
+		out[i] = asciiLowerToUpper(d)
+	}
+
+	return string(out)
 }
 
 // Value implements the driver.Valuer interface for CNPJ.
