@@ -142,7 +142,7 @@ func cpfIterFirst14[T string | CPF | []byte](cpf T) (byte, int, bool) {
 
 func cpfIterSecond14[T string | CPF | []byte](cpf T, sum int) (byte, bool) {
 	if len(cpf) != 14 {
-		panic("not 14 or 10")
+		panic("not 14")
 	}
 
 	var rest, out int
@@ -190,7 +190,7 @@ func cpfIterFirst11[T string | CPF | []byte](cpf T) (byte, int, bool) {
 
 func cpfIterSecond11[T string | CPF | []byte](cpf T, sum int) (byte, bool) {
 	if len(cpf) != 11 {
-		panic("not 11 or 10")
+		panic("not 11")
 	}
 
 	var rest, out int
