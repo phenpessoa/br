@@ -1,4 +1,4 @@
-package br
+package address
 
 import (
 	"bytes"
@@ -340,6 +340,10 @@ func (cep CEP) IsValid() bool {
 	}
 
 	return !invalidCEPs.Contains(string(cep))
+}
+
+func isDigit(b byte) bool {
+	return b >= '0' && b <= '9'
 }
 
 // String returns the formatted CEP string as XXXXX-XXX.
