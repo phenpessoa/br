@@ -2,6 +2,23 @@ package br
 
 import "testing"
 
+var cnpjSink CNPJ
+
+func BenchmarkGenerateCNPJ(b *testing.B) {
+	b.ReportAllocs()
+	for range b.N {
+		cnpjSink = GenerateCNPJ()
+	}
+}
+
+func TestGenerateCNPJ(t *testing.T) {
+	for range 1_000_000 {
+		if cnpj := GenerateCNPJ(); !cnpj.IsValid() {
+			t.Errorf("invalid CNPJ generated: %s", string(cnpj))
+		}
+	}
+}
+
 func BenchmarkCNPJ_IsValid18(b *testing.B) {
 	const cnpj = CNPJ("33.000.167/1002-46")
 	if !cnpj.IsValid() {
