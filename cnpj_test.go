@@ -2,15 +2,75 @@ package br
 
 import "testing"
 
-func BenchmarkCNPJ_IsValid(b *testing.B) {
-	const cnpjPetrobras = CNPJ("33.000.167/1002-46")
-	if !cnpjPetrobras.IsValid() {
-		b.Error("invalid cnpjPetrobras on benchmark")
+func BenchmarkCNPJ_IsValid18(b *testing.B) {
+	const cnpj = CNPJ("33.000.167/1002-46")
+	if !cnpj.IsValid() {
+		b.Error("invalid cnpj on benchmark")
 		b.FailNow()
 	}
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		boolSink = cnpjPetrobras.IsValid()
+	for range b.N {
+		boolSink = cnpj.IsValid()
+	}
+}
+
+func BenchmarkCNPJ_IsValid14(b *testing.B) {
+	const cnpj = CNPJ("33000167100246")
+	if !cnpj.IsValid() {
+		b.Error("invalid cnpj on benchmark")
+		b.FailNow()
+	}
+	b.ReportAllocs()
+	for range b.N {
+		boolSink = cnpj.IsValid()
+	}
+}
+
+func BenchmarkCNPJ_IsValid18Invalid(b *testing.B) {
+	const cnpj = CNPJ("33.000.167/1002-47")
+	if cnpj.IsValid() {
+		b.Error("valid cnpj on benchmark")
+		b.FailNow()
+	}
+	b.ReportAllocs()
+	for range b.N {
+		boolSink = cnpj.IsValid()
+	}
+}
+
+func BenchmarkCNPJ_IsValid14Invalid(b *testing.B) {
+	const cnpj = CNPJ("33000167100247")
+	if cnpj.IsValid() {
+		b.Error("valid cnpj on benchmark")
+		b.FailNow()
+	}
+	b.ReportAllocs()
+	for range b.N {
+		boolSink = cnpj.IsValid()
+	}
+}
+
+func BenchmarkCNPJ_String18(b *testing.B) {
+	const cnpj = CNPJ("33.000.167/1002-46")
+	if !cnpj.IsValid() {
+		b.Error("invalid cnpj on benchmark")
+		b.FailNow()
+	}
+	b.ReportAllocs()
+	for range b.N {
+		stringSink = cnpj.String()
+	}
+}
+
+func BenchmarkCNPJ_String14(b *testing.B) {
+	const cnpj = CNPJ("33000167100246")
+	if !cnpj.IsValid() {
+		b.Error("invalid cnpj on benchmark")
+		b.FailNow()
+	}
+	b.ReportAllocs()
+	for range b.N {
+		stringSink = cnpj.String()
 	}
 }
 
@@ -93,6 +153,16 @@ func TestCNPJ_IsValid(t *testing.T) {
 		{
 			name:  "formatted CNPJ alfanumerico 2",
 			cnpj:  CNPJ("AB.CDE.FGI/HIJK-56"),
+			valid: true,
+		},
+		{
+			name:  "raw alfanumerico 3",
+			cnpj:  CNPJ("12ABC34501DE35"),
+			valid: true,
+		},
+		{
+			name:  "formatted alfanumerico 3",
+			cnpj:  CNPJ("12.ABC.345/01DE-35"),
 			valid: true,
 		},
 	} {

@@ -8,13 +8,8 @@ import (
 	"github.com/phenpessoa/gutils/unsafex"
 )
 
-var (
-	// ErrInvalidCNPJ is an error returned when an invalid CNPJ is encountered.
-	ErrInvalidCNPJ = errors.New("br: invalid cnpj passed")
-
-	cnpjFirstTable  = []int{5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2}
-	cnpjSecondTable = []int{6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2}
-)
+// CNPJ represents a Brazilian CNPJ.
+type CNPJ string
 
 // NewCNPJ creates a new CNPJ instance from a string representation.
 //
@@ -27,75 +22,212 @@ func NewCNPJ(s string) (CNPJ, error) {
 	return cnpj, nil
 }
 
-// CNPJ represents a Brazilian CNPJ.
-type CNPJ string
+// ErrInvalidCNPJ is an error returned when an invalid CNPJ is encountered.
+var ErrInvalidCNPJ = errors.New("br: invalid cnpj")
+
+// cnpj tables
+var (
+	cnpjFirstTable  = []int{5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2}
+	cnpjSecondTable = []int{6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2}
+)
 
 // IsValid checks whether the provided CNPJ is valid based on its checksum
 // digits.
 func (cnpj CNPJ) IsValid() bool {
-	l := len(cnpj)
-	if l != 14 && l != 18 {
-		return false
-	}
-
-	dByte, ok := iterCNPJTable(cnpj, cnpjFirstTable)
-	if !ok {
-		return false
-	}
-	if cnpj[l-2] != dByte {
-		return false
-	}
-
-	dByte, ok = iterCNPJTable(cnpj, cnpjSecondTable)
-	if !ok {
-		return false
-	}
-
-	return cnpj[l-1] == dByte
-}
-
-func iterCNPJTable(cnpj CNPJ, table []int) (byte, bool) {
-	var sum, pad, rest, d int
-
-	for i, d := range table {
-		cur := cnpj[i+pad]
-		switch cur {
-		case '.':
-			if i != 2 && i != 5 {
-				return 0, false
-			}
-			pad++
-			cur = cnpj[i+pad]
-		case '/':
-			if i != 8 {
-				return 0, false
-			}
-			pad++
-			cur = cnpj[i+pad]
-		case '-':
-			if i != 12 {
-				return 0, false
-			}
-			pad++
-			cur = cnpj[i+pad]
+	switch len(cnpj) {
+	case 14:
+		dByte, ok := cnpjIterFirst14(cnpj)
+		if !ok {
+			return false
 		}
 
-		cur = asciiLowerToUpper(cur)
+		if cnpj[len(cnpj)-2] != dByte {
+			return false
+		}
 
+		dByte, ok = cnpjIterSecond14(cnpj)
+		if !ok {
+			return false
+		}
+
+		return cnpj[len(cnpj)-1] == dByte
+	case 18:
+		if cnpj[2] != '.' || cnpj[6] != '.' || cnpj[10] != '/' || cnpj[15] != '-' {
+			return false
+		}
+
+		dByte, ok := cnpjIterFirst18(cnpj)
+		if !ok {
+			return false
+		}
+
+		if cnpj[len(cnpj)-2] != dByte {
+			return false
+		}
+
+		dByte, ok = cnpjIterSecond18(cnpj)
+		if !ok {
+			return false
+		}
+
+		return cnpj[len(cnpj)-1] == dByte
+	default:
+		return false
+	}
+}
+
+func cnpjIterFirst18[T string | CNPJ | []byte](cnpj T) (byte, bool) {
+	if len(cnpj) != 18 || len(cnpjFirstTable) != 12 {
+		panic("not 18 or 12")
+	}
+
+	var sum, rest, out int
+	for i, d := range cnpjFirstTable[:2] {
+		cur := asciiLowerToUpper(cnpj[i])
 		if !isAlphaNumericalUpper(cur) {
 			return 0, false
 		}
+		sum += d * int(cur-'0')
+	}
 
+	for i, d := range cnpjFirstTable[2:5] {
+		cur := asciiLowerToUpper(cnpj[3:6][i])
+		if !isAlphaNumericalUpper(cur) {
+			return 0, false
+		}
+		sum += d * int(cur-'0')
+	}
+
+	for i, d := range cnpjFirstTable[5:8] {
+		cur := asciiLowerToUpper(cnpj[7:10][i])
+		if !isAlphaNumericalUpper(cur) {
+			return 0, false
+		}
+		sum += d * int(cur-'0')
+	}
+
+	for i, d := range cnpjFirstTable[8:12] {
+		cur := asciiLowerToUpper(cnpj[11:15][i])
+		if !isAlphaNumericalUpper(cur) {
+			return 0, false
+		}
 		sum += d * int(cur-'0')
 	}
 
 	rest = sum % 11
 
 	if rest >= 2 {
-		d = 11 - rest
+		out = 11 - rest
 	}
 
-	return byte(d) + '0', true
+	return byte(out) + '0', true
+}
+
+func cnpjIterSecond18[T string | CNPJ | []byte](cnpj T) (byte, bool) {
+	if len(cnpj) != 18 || len(cnpjSecondTable) != 13 {
+		panic("not 18 or 12")
+	}
+
+	var sum, rest, out int
+	for i, d := range cnpjSecondTable[:2] {
+		cur := asciiLowerToUpper(cnpj[i])
+		if !isAlphaNumericalUpper(cur) {
+			return 0, false
+		}
+		sum += d * int(cur-'0')
+	}
+
+	for i, d := range cnpjSecondTable[2:5] {
+		cur := asciiLowerToUpper(cnpj[3:6][i])
+		if !isAlphaNumericalUpper(cur) {
+			return 0, false
+		}
+		sum += d * int(cur-'0')
+	}
+
+	for i, d := range cnpjSecondTable[5:8] {
+		cur := asciiLowerToUpper(cnpj[7:10][i])
+		if !isAlphaNumericalUpper(cur) {
+			return 0, false
+		}
+		sum += d * int(cur-'0')
+	}
+
+	for i, d := range cnpjSecondTable[8:12] {
+		cur := asciiLowerToUpper(cnpj[11:15][i])
+		if !isAlphaNumericalUpper(cur) {
+			return 0, false
+		}
+		sum += d * int(cur-'0')
+	}
+
+	last := cnpj[16]
+	if !isDigit(last) {
+		return 0, false
+	}
+	sum += cnpjSecondTable[12] * int(last-'0')
+
+	rest = sum % 11
+
+	if rest >= 2 {
+		out = 11 - rest
+	}
+
+	return byte(out) + '0', true
+}
+
+func cnpjIterFirst14[T string | CNPJ | []byte](cnpj T) (byte, bool) {
+	if len(cnpj) != 14 || len(cnpjFirstTable) != 12 {
+		panic("not 14 or 12")
+	}
+
+	var sum, rest, out int
+
+	for i, d := range cnpjFirstTable {
+		cur := asciiLowerToUpper(cnpj[i])
+		if !isAlphaNumericalUpper(cur) {
+			return 0, false
+		}
+		sum += d * int(cur-'0')
+	}
+
+	rest = sum % 11
+
+	if rest >= 2 {
+		out = 11 - rest
+	}
+
+	return byte(out) + '0', true
+}
+
+func cnpjIterSecond14[T string | CNPJ | []byte](cnpj T) (byte, bool) {
+	if len(cnpj) != 14 || len(cnpjSecondTable) != 13 {
+		panic("not 14 or 12")
+	}
+
+	var sum, rest, out int
+
+	for i, d := range cnpjSecondTable[:12] {
+		cur := asciiLowerToUpper(cnpj[i])
+		if !isAlphaNumericalUpper(cur) {
+			return 0, false
+		}
+		sum += d * int(cur-'0')
+	}
+
+	last := cnpj[12]
+	if !isDigit(last) {
+		return 0, false
+	}
+	sum += cnpjSecondTable[12] * int(last-'0')
+
+	rest = sum % 11
+
+	if rest >= 2 {
+		out = 11 - rest
+	}
+
+	return byte(out) + '0', true
 }
 
 // String returns the formatted CNPJ string with punctuation as

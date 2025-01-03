@@ -41,3 +41,28 @@ func randomDigit() byte {
 
 	return byte(hi) + '0'
 }
+
+var alphaNumericals = []byte{
+	'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
+	'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+	'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
+	'Y', 'Z',
+	'0', '1', '2', '3', '4', '5', '6', '7',
+	'8', '9',
+}
+
+func randomAlphaNumericalUpper() byte {
+	n := uint64(len(alphaNumericals))
+
+	// This code here is taken from the stdlib.
+	// You can check it at the math/rand/v2 package under func '(r *Rand) uint64n(n uint64) uint64'.
+	hi, lo := bits.Mul64(pcg.Uint64(), n)
+	if lo < n {
+		thresh := -n % n
+		for lo < thresh {
+			hi, lo = bits.Mul64(pcg.Uint64(), n)
+		}
+	}
+
+	return alphaNumericals[int(hi)]
+}
