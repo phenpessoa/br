@@ -221,7 +221,7 @@ func (cpf CPF) String() string {
 	}
 
 	if len(cpf) != 11 {
-		panic("not 11")
+		return ""
 	}
 
 	out := make([]byte, 14)
