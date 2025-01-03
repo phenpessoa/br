@@ -37,8 +37,9 @@ func GenerateCPF() CPF {
 		data[i] = randomDigit()
 	}
 
-	data[12], _ = cpfIterFirst14(data)
-	data[13], _ = cpfIterSecond14(data)
+	var cacheSum int
+	data[12], cacheSum, _ = cpfIterFirst14(data)
+	data[13], _ = cpfIterSecond14(data, cacheSum)
 
 	return CPF(string(data))
 }
@@ -46,18 +47,14 @@ func GenerateCPF() CPF {
 // ErrInvalidCPF is an error returned when an invalid CPF is encountered.
 var ErrInvalidCPF = errors.New("br: invalid cpf")
 
-// cpf tables
-var (
-	cpfFirstTable  = []int{10, 9, 8, 7, 6, 5, 4, 3, 2}
-	cpfSecondTable = []int{11, 10, 9, 8, 7, 6, 5, 4, 3, 2}
-)
+var cpfFirstTable = []int{10, 9, 8, 7, 6, 5, 4, 3, 2}
 
 // IsValid checks whether the provided CPF is valid based on its checksum
 // digits.
 func (cpf CPF) IsValid() bool {
 	switch len(cpf) {
 	case 11:
-		dByte, ok := cpfIterFirst11(cpf)
+		dByte, cacheSum, ok := cpfIterFirst11(cpf)
 		if !ok {
 			return false
 		}
@@ -66,7 +63,7 @@ func (cpf CPF) IsValid() bool {
 			return false
 		}
 
-		dByte, ok = cpfIterSecond11(cpf)
+		dByte, ok = cpfIterSecond11(cpf, cacheSum)
 		if !ok {
 			return false
 		}
@@ -77,7 +74,7 @@ func (cpf CPF) IsValid() bool {
 			return false
 		}
 
-		dByte, ok := cpfIterFirst14(cpf)
+		dByte, cacheSum, ok := cpfIterFirst14(cpf)
 		if !ok {
 			return false
 		}
@@ -86,7 +83,7 @@ func (cpf CPF) IsValid() bool {
 			return false
 		}
 
-		dByte, ok = cpfIterSecond14(cpf)
+		dByte, ok = cpfIterSecond14(cpf, cacheSum)
 		if !ok {
 			return false
 		}
@@ -97,35 +94,41 @@ func (cpf CPF) IsValid() bool {
 	}
 }
 
-func cpfIterFirst14[T string | CPF | []byte](cpf T) (byte, bool) {
+func cpfIterFirst14[T string | CPF | []byte](cpf T) (byte, int, bool) {
 	if len(cpf) != 14 || len(cpfFirstTable) != 9 {
 		panic("not 14 or 9")
 	}
 
-	var sum, rest, out int
+	var sum, cacheSum, rest, out int
 
 	for i, d := range cpfFirstTable[:3] {
 		cur := cpf[i]
 		if !isDigit(cur) {
-			return 0, false
+			return 0, 0, false
 		}
-		sum += d * int(cur-'0')
+		parsed := int(cur - '0')
+		sum += d * parsed
+		cacheSum += parsed
 	}
 
 	for i, d := range cpfFirstTable[3:6] {
 		cur := cpf[4:7][i]
 		if !isDigit(cur) {
-			return 0, false
+			return 0, 0, false
 		}
-		sum += d * int(cur-'0')
+		parsed := int(cur - '0')
+		sum += d * parsed
+		cacheSum += parsed
 	}
 
 	for i, d := range cpfFirstTable[6:9] {
 		cur := cpf[8:11][i]
 		if !isDigit(cur) {
-			return 0, false
+			return 0, 0, false
 		}
-		sum += d * int(cur-'0')
+		parsed := int(cur - '0')
+		sum += d * parsed
+		cacheSum += parsed
 	}
 
 	rest = sum % 11
@@ -134,45 +137,21 @@ func cpfIterFirst14[T string | CPF | []byte](cpf T) (byte, bool) {
 		out = 11 - rest
 	}
 
-	return byte(out) + '0', true
+	return byte(out) + '0', cacheSum + sum, true
 }
 
-func cpfIterSecond14[T string | CPF | []byte](cpf T) (byte, bool) {
-	if len(cpf) != 14 || len(cpfSecondTable) != 10 {
-		panic("not 14 or 10")
+func cpfIterSecond14[T string | CPF | []byte](cpf T, sum int) (byte, bool) {
+	if len(cpf) != 14 {
+		panic("not 14")
 	}
 
-	var sum, rest, out int
-
-	for i, d := range cpfSecondTable[:3] {
-		cur := cpf[i]
-		if !isDigit(cur) {
-			return 0, false
-		}
-		sum += d * int(cur-'0')
-	}
-
-	for i, d := range cpfSecondTable[3:6] {
-		cur := cpf[4:7][i]
-		if !isDigit(cur) {
-			return 0, false
-		}
-		sum += d * int(cur-'0')
-	}
-
-	for i, d := range cpfSecondTable[6:9] {
-		cur := cpf[8:11][i]
-		if !isDigit(cur) {
-			return 0, false
-		}
-		sum += d * int(cur-'0')
-	}
+	var rest, out int
 
 	last := cpf[12]
 	if !isDigit(last) {
 		return 0, false
 	}
-	sum += cpfSecondTable[9] * int(last-'0')
+	sum += 2 * int(last-'0')
 
 	rest = sum % 11
 
@@ -183,19 +162,21 @@ func cpfIterSecond14[T string | CPF | []byte](cpf T) (byte, bool) {
 	return byte(out) + '0', true
 }
 
-func cpfIterFirst11[T string | CPF | []byte](cpf T) (byte, bool) {
+func cpfIterFirst11[T string | CPF | []byte](cpf T) (byte, int, bool) {
 	if len(cpf) != 11 || len(cpfFirstTable) != 9 {
 		panic("not 11 or 9")
 	}
 
-	var sum, rest, out int
+	var sum, cacheSum, rest, out int
 
 	for i, d := range cpfFirstTable {
 		cur := cpf[i]
 		if !isDigit(cur) {
-			return 0, false
+			return 0, 0, false
 		}
-		sum += d * int(cur-'0')
+		parsed := int(cur - '0')
+		sum += d * parsed
+		cacheSum += parsed
 	}
 
 	rest = sum % 11
@@ -204,23 +185,21 @@ func cpfIterFirst11[T string | CPF | []byte](cpf T) (byte, bool) {
 		out = 11 - rest
 	}
 
-	return byte(out) + '0', true
+	return byte(out) + '0', cacheSum + sum, true
 }
 
-func cpfIterSecond11[T string | CPF | []byte](cpf T) (byte, bool) {
-	if len(cpf) != 11 || len(cpfSecondTable) != 10 {
-		panic("not 11 or 10")
+func cpfIterSecond11[T string | CPF | []byte](cpf T, sum int) (byte, bool) {
+	if len(cpf) != 11 {
+		panic("not 11")
 	}
 
-	var sum, rest, out int
+	var rest, out int
 
-	for i, d := range cpfSecondTable {
-		cur := cpf[i]
-		if !isDigit(cur) {
-			return 0, false
-		}
-		sum += d * int(cur-'0')
+	last := cpf[9]
+	if !isDigit(last) {
+		return 0, false
 	}
+	sum += 2 * int(last-'0')
 
 	rest = sum % 11
 
