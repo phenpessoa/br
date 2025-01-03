@@ -22,6 +22,35 @@ func NewCNPJ(s string) (CNPJ, error) {
 	return cnpj, nil
 }
 
+func GenerateCNPJ() CNPJ {
+	data := make([]byte, 18)
+	data[2] = '.'
+	data[6] = '.'
+	data[10] = '/'
+	data[15] = '-'
+
+	for i := range 2 {
+		data[i] = randomAlphaNumericalUpper()
+	}
+
+	for i := 3; i < 6; i++ {
+		data[i] = randomAlphaNumericalUpper()
+	}
+
+	for i := 7; i < 10; i++ {
+		data[i] = randomAlphaNumericalUpper()
+	}
+
+	for i := 11; i < 15; i++ {
+		data[i] = randomAlphaNumericalUpper()
+	}
+
+	data[16], _ = cnpjIterFirst18(data)
+	data[17], _ = cnpjIterSecond18(data)
+
+	return CNPJ(string(data))
+}
+
 // ErrInvalidCNPJ is an error returned when an invalid CNPJ is encountered.
 var ErrInvalidCNPJ = errors.New("br: invalid cnpj")
 
