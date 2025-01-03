@@ -38,8 +38,8 @@ func GenerateCPF() CPF {
 	}
 
 	var cacheSum int
-	data[12], cacheSum, _ = CpfIterFirst14(data)
-	data[13], _ = CpfIterSecond14(data, cacheSum)
+	data[12], cacheSum, _ = cpfIterFirst14(data)
+	data[13], _ = cpfIterSecond14(data, cacheSum)
 
 	return CPF(string(data))
 }
@@ -74,7 +74,7 @@ func (cpf CPF) IsValid() bool {
 			return false
 		}
 
-		dByte, cacheSum, ok := CpfIterFirst14(cpf)
+		dByte, cacheSum, ok := cpfIterFirst14(cpf)
 		if !ok {
 			return false
 		}
@@ -83,7 +83,7 @@ func (cpf CPF) IsValid() bool {
 			return false
 		}
 
-		dByte, ok = CpfIterSecond14(cpf, cacheSum)
+		dByte, ok = cpfIterSecond14(cpf, cacheSum)
 		if !ok {
 			return false
 		}
@@ -94,7 +94,7 @@ func (cpf CPF) IsValid() bool {
 	}
 }
 
-func CpfIterFirst14[T string | CPF | []byte](cpf T) (byte, int, bool) {
+func cpfIterFirst14[T string | CPF | []byte](cpf T) (byte, int, bool) {
 	if len(cpf) != 14 || len(cpfFirstTable) != 9 {
 		panic("not 14 or 9")
 	}
@@ -140,7 +140,7 @@ func CpfIterFirst14[T string | CPF | []byte](cpf T) (byte, int, bool) {
 	return byte(out) + '0', cacheSum + sum, true
 }
 
-func CpfIterSecond14[T string | CPF | []byte](cpf T, sum int) (byte, bool) {
+func cpfIterSecond14[T string | CPF | []byte](cpf T, sum int) (byte, bool) {
 	if len(cpf) != 14 {
 		panic("not 14 or 10")
 	}
