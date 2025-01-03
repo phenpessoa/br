@@ -524,7 +524,7 @@ func viaCEP(cep CEP) (Address, error) {
 		)
 	}
 
-	if dados.Erro || dados.Address.CEP == "" {
+	if dados.Erro || dados.CEP == "" {
 		return Address{}, ErrInvalidCEP
 	}
 

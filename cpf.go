@@ -3,7 +3,6 @@ package br
 import (
 	"database/sql/driver"
 	"errors"
-	"math/rand/v2"
 )
 
 // CPF represents a Brazilian CPF.
@@ -26,8 +25,6 @@ func GenerateCPF() CPF {
 	data[7] = '.'
 	data[11] = '-'
 
-	rand.Int32N(2)
-
 	for i := range 3 {
 		data[i] = randomDigit()
 	}
@@ -40,14 +37,14 @@ func GenerateCPF() CPF {
 		data[i] = randomDigit()
 	}
 
-	data[12], _ = iterFirst14(data)
-	data[13], _ = iterSecond14(data)
+	data[12], _ = cpfIterFirst14(data)
+	data[13], _ = cpfIterSecond14(data)
 
 	return CPF(string(data))
 }
 
 // ErrInvalidCPF is an error returned when an invalid CPF is encountered.
-var ErrInvalidCPF = errors.New("br: invalid cpf passed")
+var ErrInvalidCPF = errors.New("br: invalid cpf")
 
 // cpf tables
 var (
@@ -60,7 +57,7 @@ var (
 func (cpf CPF) IsValid() bool {
 	switch len(cpf) {
 	case 11:
-		dByte, ok := iterFirst11(cpf)
+		dByte, ok := cpfIterFirst11(cpf)
 		if !ok {
 			return false
 		}
@@ -69,7 +66,7 @@ func (cpf CPF) IsValid() bool {
 			return false
 		}
 
-		dByte, ok = iterSecond11(cpf)
+		dByte, ok = cpfIterSecond11(cpf)
 		if !ok {
 			return false
 		}
@@ -80,7 +77,7 @@ func (cpf CPF) IsValid() bool {
 			return false
 		}
 
-		dByte, ok := iterFirst14(cpf)
+		dByte, ok := cpfIterFirst14(cpf)
 		if !ok {
 			return false
 		}
@@ -89,7 +86,7 @@ func (cpf CPF) IsValid() bool {
 			return false
 		}
 
-		dByte, ok = iterSecond14(cpf)
+		dByte, ok = cpfIterSecond14(cpf)
 		if !ok {
 			return false
 		}
@@ -100,7 +97,7 @@ func (cpf CPF) IsValid() bool {
 	}
 }
 
-func iterFirst14[T string | CPF | []byte](cpf T) (byte, bool) {
+func cpfIterFirst14[T string | CPF | []byte](cpf T) (byte, bool) {
 	if len(cpf) != 14 || len(cpfFirstTable) != 9 {
 		panic("not 14 or 9")
 	}
@@ -140,7 +137,7 @@ func iterFirst14[T string | CPF | []byte](cpf T) (byte, bool) {
 	return byte(out) + '0', true
 }
 
-func iterSecond14[T string | CPF | []byte](cpf T) (byte, bool) {
+func cpfIterSecond14[T string | CPF | []byte](cpf T) (byte, bool) {
 	if len(cpf) != 14 || len(cpfSecondTable) != 10 {
 		panic("not 14 or 10")
 	}
@@ -186,7 +183,7 @@ func iterSecond14[T string | CPF | []byte](cpf T) (byte, bool) {
 	return byte(out) + '0', true
 }
 
-func iterFirst11[T string | CPF | []byte](cpf T) (byte, bool) {
+func cpfIterFirst11[T string | CPF | []byte](cpf T) (byte, bool) {
 	if len(cpf) != 11 || len(cpfFirstTable) != 9 {
 		panic("not 11 or 9")
 	}
@@ -210,7 +207,7 @@ func iterFirst11[T string | CPF | []byte](cpf T) (byte, bool) {
 	return byte(out) + '0', true
 }
 
-func iterSecond11[T string | CPF | []byte](cpf T) (byte, bool) {
+func cpfIterSecond11[T string | CPF | []byte](cpf T) (byte, bool) {
 	if len(cpf) != 11 || len(cpfSecondTable) != 10 {
 		panic("not 11 or 10")
 	}

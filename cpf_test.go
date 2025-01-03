@@ -6,8 +6,16 @@ var cpfSink CPF
 
 func BenchmarkGenerateCPF(b *testing.B) {
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		cpfSink = GenerateCPF()
+	}
+}
+
+func TestGenerateCPF(t *testing.T) {
+	for range 1_000_000 {
+		if cpf := GenerateCPF(); !cpf.IsValid() {
+			t.Errorf("invalid CPF generated: %s", string(cpf))
+		}
 	}
 }
 
@@ -18,7 +26,7 @@ func BenchmarkCPF_IsValid14(b *testing.B) {
 		b.FailNow()
 	}
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		boolSink = cpf.IsValid()
 	}
 }
@@ -30,7 +38,7 @@ func BenchmarkCPF_IsValid11(b *testing.B) {
 		b.FailNow()
 	}
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		boolSink = cpf.IsValid()
 	}
 }
@@ -42,7 +50,7 @@ func BenchmarkCPF_IsValid14Invalid(b *testing.B) {
 		b.FailNow()
 	}
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		boolSink = cpf.IsValid()
 	}
 }
@@ -54,7 +62,7 @@ func BenchmarkCPF_IsValid11Invalid(b *testing.B) {
 		b.FailNow()
 	}
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		boolSink = cpf.IsValid()
 	}
 }
@@ -66,7 +74,7 @@ func BenchmarkCPF_String14(b *testing.B) {
 		b.FailNow()
 	}
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		stringSink = cpf.String()
 	}
 }
@@ -78,16 +86,8 @@ func BenchmarkCPF_String11(b *testing.B) {
 		b.FailNow()
 	}
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		stringSink = cpf.String()
-	}
-}
-
-func TestGenerateCPF(t *testing.T) {
-	for range 1_000_000 {
-		if cpf := GenerateCPF(); !cpf.IsValid() {
-			t.Errorf("invalid CPF generated: %s", string(cpf))
-		}
 	}
 }
 
