@@ -44,8 +44,11 @@ func GenerateCNPJ() CNPJ {
 		data[i] = randomAlphaNumericalUpper()
 	}
 
-	data[16], _ = cnpjIterFirst18(data)
-	data[17], _ = cnpjIterSecond18(data)
+	data[4] = '0'
+
+	var cacheSum int
+	data[16], cacheSum, _ = cnpjIterFirst18(data)
+	data[17], _ = cnpjIterSecond18(data, cacheSum)
 
 	return CNPJ(string(data))
 }
@@ -53,17 +56,13 @@ func GenerateCNPJ() CNPJ {
 // ErrInvalidCNPJ is an error returned when an invalid CNPJ is encountered.
 var ErrInvalidCNPJ = errors.New("br: invalid cnpj")
 
-// cnpj tables
-var (
-	cnpjFirstTable  = []int{5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2}
-	cnpjSecondTable = []int{6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2}
-)
+var cnpjFirstTable = []int{5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2}
 
 // IsValid checks whether the provided CNPJ is valid based on its checksum digits.
 func (cnpj CNPJ) IsValid() bool {
 	switch len(cnpj) {
 	case 14:
-		dByte, ok := cnpjIterFirst14(cnpj)
+		dByte, cacheSum, ok := cnpjIterFirst14(cnpj)
 		if !ok {
 			return false
 		}
@@ -72,7 +71,7 @@ func (cnpj CNPJ) IsValid() bool {
 			return false
 		}
 
-		dByte, ok = cnpjIterSecond14(cnpj)
+		dByte, ok = cnpjIterSecond14(cnpj, cacheSum)
 		if !ok {
 			return false
 		}
@@ -83,7 +82,7 @@ func (cnpj CNPJ) IsValid() bool {
 			return false
 		}
 
-		dByte, ok := cnpjIterFirst18(cnpj)
+		dByte, cacheSum, ok := cnpjIterFirst18(cnpj)
 		if !ok {
 			return false
 		}
@@ -92,7 +91,7 @@ func (cnpj CNPJ) IsValid() bool {
 			return false
 		}
 
-		dByte, ok = cnpjIterSecond18(cnpj)
+		dByte, ok = cnpjIterSecond18(cnpj, cacheSum)
 		if !ok {
 			return false
 		}
@@ -103,42 +102,59 @@ func (cnpj CNPJ) IsValid() bool {
 	}
 }
 
-func cnpjIterFirst18[T string | CNPJ | []byte](cnpj T) (byte, bool) {
+func cnpjIterFirst18[T string | CNPJ | []byte](cnpj T) (byte, int, bool) {
 	if len(cnpj) != 18 || len(cnpjFirstTable) != 12 {
 		panic("not 18 or 12")
 	}
 
-	var sum, rest, out int
+	var sum, cacheSum, rest, out int
+
 	for i, d := range cnpjFirstTable[:2] {
 		cur := asciiLowerToUpper(cnpj[i])
 		if !isAlphaNumericalUpper(cur) {
-			return 0, false
+			return 0, 0, false
 		}
-		sum += d * int(cur-'0')
+		parsed := int(cur - '0')
+		sum += d * parsed
+		cacheSum += parsed
 	}
 
 	for i, d := range cnpjFirstTable[2:5] {
 		cur := asciiLowerToUpper(cnpj[3:6][i])
 		if !isAlphaNumericalUpper(cur) {
-			return 0, false
+			return 0, 0, false
 		}
-		sum += d * int(cur-'0')
+		parsed := int(cur - '0')
+		sum += d * parsed
+
+		if i == 2 {
+			// The delta of all digits in the 2 CNPJ tables is 1,
+			// the only exception is on index 4.
+			// That's why this is the only index that needs special treatment.
+			cacheSum += parsed * (2 - 9) // cnpjSecondTable[4] - cnpjFirstTable[4]
+		} else {
+			cacheSum += parsed
+		}
 	}
 
 	for i, d := range cnpjFirstTable[5:8] {
 		cur := asciiLowerToUpper(cnpj[7:10][i])
 		if !isAlphaNumericalUpper(cur) {
-			return 0, false
+			return 0, 0, false
 		}
-		sum += d * int(cur-'0')
+		parsed := int(cur - '0')
+		sum += d * parsed
+		cacheSum += parsed
 	}
 
 	for i, d := range cnpjFirstTable[8:12] {
 		cur := asciiLowerToUpper(cnpj[11:15][i])
 		if !isAlphaNumericalUpper(cur) {
-			return 0, false
+			return 0, 0, false
 		}
-		sum += d * int(cur-'0')
+		parsed := int(cur - '0')
+		sum += d * parsed
+		cacheSum += parsed
 	}
 
 	rest = sum % 11
@@ -147,52 +163,21 @@ func cnpjIterFirst18[T string | CNPJ | []byte](cnpj T) (byte, bool) {
 		out = 11 - rest
 	}
 
-	return byte(out) + '0', true
+	return byte(out) + '0', cacheSum + sum, true
 }
 
-func cnpjIterSecond18[T string | CNPJ | []byte](cnpj T) (byte, bool) {
-	if len(cnpj) != 18 || len(cnpjSecondTable) != 13 {
+func cnpjIterSecond18[T string | CNPJ | []byte](cnpj T, sum int) (byte, bool) {
+	if len(cnpj) != 18 {
 		panic("not 18 or 12")
 	}
 
-	var sum, rest, out int
-	for i, d := range cnpjSecondTable[:2] {
-		cur := asciiLowerToUpper(cnpj[i])
-		if !isAlphaNumericalUpper(cur) {
-			return 0, false
-		}
-		sum += d * int(cur-'0')
-	}
-
-	for i, d := range cnpjSecondTable[2:5] {
-		cur := asciiLowerToUpper(cnpj[3:6][i])
-		if !isAlphaNumericalUpper(cur) {
-			return 0, false
-		}
-		sum += d * int(cur-'0')
-	}
-
-	for i, d := range cnpjSecondTable[5:8] {
-		cur := asciiLowerToUpper(cnpj[7:10][i])
-		if !isAlphaNumericalUpper(cur) {
-			return 0, false
-		}
-		sum += d * int(cur-'0')
-	}
-
-	for i, d := range cnpjSecondTable[8:12] {
-		cur := asciiLowerToUpper(cnpj[11:15][i])
-		if !isAlphaNumericalUpper(cur) {
-			return 0, false
-		}
-		sum += d * int(cur-'0')
-	}
+	var rest, out int
 
 	last := cnpj[16]
 	if !isDigit(last) {
 		return 0, false
 	}
-	sum += cnpjSecondTable[12] * int(last-'0')
+	sum += 2 * int(last-'0')
 
 	rest = sum % 11
 
@@ -203,19 +188,28 @@ func cnpjIterSecond18[T string | CNPJ | []byte](cnpj T) (byte, bool) {
 	return byte(out) + '0', true
 }
 
-func cnpjIterFirst14[T string | CNPJ | []byte](cnpj T) (byte, bool) {
+func cnpjIterFirst14[T string | CNPJ | []byte](cnpj T) (byte, int, bool) {
 	if len(cnpj) != 14 || len(cnpjFirstTable) != 12 {
 		panic("not 14 or 12")
 	}
 
-	var sum, rest, out int
+	var sum, cacheSum, rest, out int
 
 	for i, d := range cnpjFirstTable {
 		cur := asciiLowerToUpper(cnpj[i])
 		if !isAlphaNumericalUpper(cur) {
-			return 0, false
+			return 0, 0, false
 		}
-		sum += d * int(cur-'0')
+		parsed := int(cur - '0')
+		sum += d * parsed
+		if i == 4 {
+			// The delta of all digits in the two CNPJ tables is 1,
+			// the only exception is on index 4.
+			// That's why this is the only index that needs special treatment.
+			cacheSum += parsed * (2 - 9) // cnpjSecondTable[4] - cnpjFirstTable[4]
+		} else {
+			cacheSum += parsed
+		}
 	}
 
 	rest = sum % 11
@@ -224,29 +218,21 @@ func cnpjIterFirst14[T string | CNPJ | []byte](cnpj T) (byte, bool) {
 		out = 11 - rest
 	}
 
-	return byte(out) + '0', true
+	return byte(out) + '0', cacheSum + sum, true
 }
 
-func cnpjIterSecond14[T string | CNPJ | []byte](cnpj T) (byte, bool) {
-	if len(cnpj) != 14 || len(cnpjSecondTable) != 13 {
+func cnpjIterSecond14[T string | CNPJ | []byte](cnpj T, sum int) (byte, bool) {
+	if len(cnpj) != 14 {
 		panic("not 14 or 12")
 	}
 
-	var sum, rest, out int
-
-	for i, d := range cnpjSecondTable[:12] {
-		cur := asciiLowerToUpper(cnpj[i])
-		if !isAlphaNumericalUpper(cur) {
-			return 0, false
-		}
-		sum += d * int(cur-'0')
-	}
+	var rest, out int
 
 	last := cnpj[12]
 	if !isDigit(last) {
 		return 0, false
 	}
-	sum += cnpjSecondTable[12] * int(last-'0')
+	sum += 2 * int(last-'0')
 
 	rest = sum % 11
 
