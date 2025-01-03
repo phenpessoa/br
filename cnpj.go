@@ -22,6 +22,7 @@ func NewCNPJ(s string) (CNPJ, error) {
 	return cnpj, nil
 }
 
+// GenerateCNPJ generates a pseudo-random valid CNPJ.
 func GenerateCNPJ() CNPJ {
 	data := make([]byte, 18)
 	data[2] = '.'
@@ -60,8 +61,7 @@ var (
 	cnpjSecondTable = []int{6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2}
 )
 
-// IsValid checks whether the provided CNPJ is valid based on its checksum
-// digits.
+// IsValid checks whether the provided CNPJ is valid based on its checksum digits.
 func (cnpj CNPJ) IsValid() bool {
 	switch len(cnpj) {
 	case 14:
@@ -259,8 +259,7 @@ func cnpjIterSecond14[T string | CNPJ | []byte](cnpj T) (byte, bool) {
 	return byte(out) + '0', true
 }
 
-// String returns the formatted CNPJ string with punctuation as
-// XX.XXX.XXX/XXXX-XX.
+// String returns the formatted CNPJ string with punctuation as XX.XXX.XXX/XXXX-XX.
 func (cnpj CNPJ) String() string {
 	if !cnpj.IsValid() {
 		return ""
@@ -304,6 +303,7 @@ func (cnpj CNPJ) String() string {
 	return unsafex.String(out)
 }
 
+// Value implements the driver.Valuer interface for CNPJ.
 func (cnpj CNPJ) Value() (driver.Value, error) {
 	return cnpj.String(), nil
 }

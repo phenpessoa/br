@@ -8,8 +8,7 @@ import (
 	"github.com/phenpessoa/gutils/unsafex"
 )
 
-// ErrInvalidPlate is an error returned when an invalid license plate is
-// encountered.
+// ErrInvalidPlate is an error returned when an invalid license plate is encountered.
 var ErrInvalidPlate = errors.New("br: invalid license plate")
 
 // NewPlate creates a new Plate instance from a string representation.
@@ -24,11 +23,9 @@ func NewPlate(s string) (Plate, error) {
 // Plate represents a Brazilian vehicle license plate.
 type Plate string
 
-// IsValid checks whether the provided license plate is valid based on specific
-// formatting rules.
+// IsValid checks whether the provided license plate is valid based on specific formatting rules.
 //
-// IsValid will return true if the plate if either a MercoSul or a Brazilian
-// type plate.
+// IsValid will return true if the plate if either a MercoSul or a Brazilian type plate.
 //
 // The formats accepted are: XXXXXXX, XXX-XXXX, XXX.XXXX
 func (p Plate) IsValid() bool {
@@ -105,6 +102,7 @@ func (p Plate) String() string {
 	return strings.ToUpper(unsafex.String(out))
 }
 
+// Value implements the driver.Valuer interface for Plate.
 func (p Plate) Value() (driver.Value, error) {
 	return p.String(), nil
 }

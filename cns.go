@@ -25,8 +25,7 @@ func NewCNS(s string) (CNS, error) {
 // CNS represents a Brazilian CNS.
 type CNS string
 
-// IsValid checks whether the provided CNS is valid based on its checksum
-// digits.
+// IsValid checks whether the provided CNS is valid based on its checksum digits.
 func (cns CNS) IsValid() bool {
 	if len(cns) != 15 && len(cns) != 18 {
 		return false
@@ -92,6 +91,7 @@ func isFirstCNSDigitValid(d byte) bool {
 	}
 }
 
+// Value implements the driver.Valuer interface for CNS.
 func (cns CNS) Value() (driver.Value, error) {
 	return cns.String(), nil
 }

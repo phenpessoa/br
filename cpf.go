@@ -19,6 +19,7 @@ func NewCPF(s string) (CPF, error) {
 	return cpf, nil
 }
 
+// GenerateCPF generates a pseudo-random valid CPF.
 func GenerateCPF() CPF {
 	data := make([]byte, 14)
 	data[3] = '.'
@@ -49,8 +50,7 @@ var ErrInvalidCPF = errors.New("br: invalid cpf")
 
 var cpfFirstTable = []int{10, 9, 8, 7, 6, 5, 4, 3, 2}
 
-// IsValid checks whether the provided CPF is valid based on its checksum
-// digits.
+// IsValid checks whether the provided CPF is valid based on its checksum digits.
 func (cpf CPF) IsValid() bool {
 	switch len(cpf) {
 	case 11:
@@ -238,6 +238,7 @@ func (cpf CPF) String() string {
 	return string(out)
 }
 
+// Value implements the driver.Valuer interface for CPF.
 func (c CPF) Value() (driver.Value, error) {
 	return c.String(), nil
 }

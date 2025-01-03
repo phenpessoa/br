@@ -24,11 +24,8 @@ var (
 	// ErrInvalidCEP is returned when an invalid CEP code is passed.
 	ErrInvalidCEP = errors.New("br: invalid cep passed")
 
-	// ErrInvalidSerializedAddress is returned when trying to deserialize an
-	// invalid string into an Address.
-	ErrInvalidSerializedAddress = errors.New(
-		"br: invalid serialized address",
-	)
+	// ErrInvalidSerializedAddress is returned when trying to deserialize an invalid string into an Address.
+	ErrInvalidSerializedAddress = errors.New("br: invalid serialized address")
 )
 
 // UF stands for Unidade Federativa and represents a Brazilian state.
@@ -48,8 +45,7 @@ func NewUF(codigo int) (UF, error) {
 	return uf, nil
 }
 
-// NewUFFromStr creates a UF instance from a string representation of the
-// state's name or abbreviation.
+// NewUFFromStr creates a UF instance from a string representation of the state's name or abbreviation.
 func NewUFFromStr(uf string) (UF, error) {
 	if len(uf) < 2 || len(uf) > 19 {
 		return 0, ErrInvalidUF
@@ -302,12 +298,10 @@ type CEP string
 
 // NewCEP creates a CEP instance from a string representation.
 //
-// It verifies the length of the CEP, the digits, and checks the cache for known
-// invalid CEPs. It does not make requests to APIs to validate the corresponding
-// address if the CEP is not in cache.
+// It verifies the length of the CEP, the digits, and checks the cache for known invalid CEPs.
+// It does not make requests to APIs to validate the corresponding address if the CEP is not in cache.
 //
-// To check if this CEP actually represents an Address, call the CEP.ToAddress
-// method.
+// To check if this CEP actually represents an Address, call the CEP.ToAddress method.
 func NewCEP(s string) (CEP, error) {
 	cep := CEP(s)
 	if !cep.IsValid() {
@@ -316,13 +310,12 @@ func NewCEP(s string) (CEP, error) {
 	return cep, nil
 }
 
-// IsValid checks whether the provided CEP is valid based on its length, digits
-// and check the caches for known invalid CEPs.
+// IsValid checks whether the provided CEP is valid based on its length and digits.
+// It will also check the cache for known invalid CEPs.
 //
 // It does not make requests to APIs to validate the corresponding address.
 //
-// To check if this CEP actually represents an Address, call the CEP.ToAddress
-// method.
+// To check if this CEP actually represents an Address, call the CEP.ToAddress method.
 func (cep CEP) IsValid() bool {
 	l := len(cep)
 	if l != 8 && l != 9 {
@@ -345,6 +338,7 @@ func (cep CEP) IsValid() bool {
 			return false
 		}
 	}
+
 	return !invalidCEPs.Contains(string(cep))
 }
 
@@ -378,11 +372,9 @@ func (cep CEP) Value() (driver.Value, error) {
 	return cep.String(), nil
 }
 
-// ToAddress converts a CEP into an Address instance, retrieving address
-// information associated with the CEP.
+// ToAddress converts a CEP into an Address instance, retrieving address information associated with the CEP.
 //
-// This method may perform requests to external APIs to fetch address details
-// based on the CEP.
+// This method may perform requests to external APIs to fetch address details based on the CEP.
 func (cep CEP) ToAddress() (addr Address, err error) {
 	if !cep.IsValid() {
 		return Address{}, ErrInvalidCEP
@@ -411,10 +403,7 @@ func (cep CEP) ToAddress() (addr Address, err error) {
 				return Address{}, ErrInvalidCEP
 			}
 
-			return Address{}, fmt.Errorf(
-				"failed to validate cep: %w",
-				errors.Join(err, err2),
-			)
+			return Address{}, fmt.Errorf("failed to validate cep: %w", errors.Join(err, err2))
 		}
 	}
 
@@ -441,32 +430,22 @@ func buscaCEP(cep CEP) (Address, error) {
 		strings.NewReader(form.Encode()),
 	)
 	if err != nil {
-		return Address{}, fmt.Errorf(
-			"failed to make post request to buscaCEP: %w", err,
-		)
+		return Address{}, fmt.Errorf("failed to make post request to buscaCEP: %w", err)
 	}
 	defer res.Body.Close()
 
 	data, _ := io.ReadAll(res.Body)
 	if res.StatusCode != http.StatusOK {
-		return Address{}, fmt.Errorf(
-			"buscaCEP status code not ok: %d\ndata: %s",
-			res.StatusCode, string(data),
-		)
+		return Address{}, fmt.Errorf("buscaCEP status code not ok: %d\ndata: %s", res.StatusCode, string(data))
 	}
 
 	var dados buscaCEPResponse
 	if err := json.Unmarshal(data, &dados); err != nil {
-		return Address{}, fmt.Errorf(
-			"failed to unmarshal buscaCEP json: %w\ndata: %s",
-			err, string(data),
-		)
+		return Address{}, fmt.Errorf("failed to unmarshal buscaCEP json: %w\ndata: %s", err, string(data))
 	}
 
 	if dados.Erro {
-		return Address{}, fmt.Errorf(
-			"busca cep server returned error: %s", dados.Mensagem,
-		)
+		return Address{}, fmt.Errorf("busca cep server returned error: %s", dados.Mensagem)
 	}
 
 	if len(dados.Dados) == 0 {
@@ -498,18 +477,13 @@ func viaCEP(cep CEP) (Address, error) {
 
 	res, err := http.Get(viaCEPURL)
 	if err != nil {
-		return Address{}, fmt.Errorf(
-			"failed to make get request to viaCEP: %w", err,
-		)
+		return Address{}, fmt.Errorf("failed to make get request to viaCEP: %w", err)
 	}
 	defer res.Body.Close()
 
 	data, _ := io.ReadAll(res.Body)
 	if res.StatusCode != http.StatusOK {
-		return Address{}, fmt.Errorf(
-			"viaCEP status code not ok: %d\ndata: %s",
-			res.StatusCode, string(data),
-		)
+		return Address{}, fmt.Errorf("viaCEP status code not ok: %d\ndata: %s", res.StatusCode, string(data))
 	}
 
 	type viaCEPResponse struct {
@@ -519,9 +493,7 @@ func viaCEP(cep CEP) (Address, error) {
 
 	var dados viaCEPResponse
 	if err := json.Unmarshal(data, &dados); err != nil {
-		return Address{}, fmt.Errorf(
-			"failed to unmarshal viaCEP json: %w\ndata: %s", err, string(data),
-		)
+		return Address{}, fmt.Errorf("failed to unmarshal viaCEP json: %w\ndata: %s", err, string(data))
 	}
 
 	if dados.Erro || dados.CEP == "" {
@@ -568,8 +540,7 @@ func (addr Address) serializedSize() int {
 		len(addr.CEP)
 }
 
-// Serialize converts the Address instance into a serialized string
-// representation.
+// Serialize converts the Address instance into a serialized string representation.
 //
 // This can be used to store the address as a string on a database, for example.
 func (addr Address) Serialize() string {
@@ -595,26 +566,17 @@ func (addr Address) Serialize() string {
 func (addr *Address) Deserialize(str string) error {
 	parts := strings.Split(str, "<pbr>")
 	if len(parts) != 7 {
-		return fmt.Errorf(
-			"%w: invalid length: %d",
-			ErrInvalidSerializedAddress, len(parts),
-		)
+		return fmt.Errorf("%w: invalid length: %d", ErrInvalidSerializedAddress, len(parts))
 	}
 
 	uf, err := NewUFFromStr(parts[0])
 	if err != nil {
-		return fmt.Errorf(
-			"%w: unknown uf: %s",
-			ErrInvalidSerializedAddress, parts[0],
-		)
+		return fmt.Errorf("%w: unknown uf: %s", ErrInvalidSerializedAddress, parts[0])
 	}
 
 	cep, err := NewCEP(parts[6])
 	if err != nil {
-		return fmt.Errorf(
-			"%w: invalid CEP: %s",
-			ErrInvalidSerializedAddress, parts[6],
-		)
+		return fmt.Errorf("%w: invalid CEP: %s", ErrInvalidSerializedAddress, parts[6])
 	}
 
 	addr.UF = uf
@@ -631,10 +593,7 @@ func (addr *Address) Deserialize(str string) error {
 func (addr *Address) Scan(value any) error {
 	str, ok := value.(string)
 	if !ok {
-		return fmt.Errorf(
-			"br: unknown type passed to Address Scan: %T",
-			value,
-		)
+		return fmt.Errorf("br: unknown type passed to Address Scan: %T", value)
 	}
 
 	if err := addr.Deserialize(str); err != nil {
@@ -649,11 +608,9 @@ func (addr Address) Value() (driver.Value, error) {
 	return addr.Serialize(), nil
 }
 
-// Validate fetches additional address information based on the associated CEP
-// and updates the Address fields.
+// Validate fetches additional address information based on the associated CEP and updates the Address fields.
 //
-// This method may perform requests to external APIs to retrieve address
-// details.
+// This method may perform requests to external APIs to retrieve address details.
 func (addr *Address) Validate() error {
 	parsedAddr, err := addr.CEP.ToAddress()
 	if err != nil {
