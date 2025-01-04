@@ -5,6 +5,23 @@ import (
 	"testing"
 )
 
+var cnsSink CNS
+
+func BenchmarkGenerateCNS(b *testing.B) {
+	b.ReportAllocs()
+	for range b.N {
+		cnsSink = GenerateCNS()
+	}
+}
+
+func TestGenerateCNS(t *testing.T) {
+	for range 1_000_000 {
+		if cns := GenerateCPF(); !cns.IsValid() {
+			t.Errorf("invalid CNS generated: %s", string(cns))
+		}
+	}
+}
+
 func BenchmarkCNS_IsValid15(b *testing.B) {
 	const randomCNS = CNS("708521331850008")
 	if !randomCNS.IsValid() {

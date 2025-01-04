@@ -19,6 +19,31 @@ func NewCNS(s string) (CNS, error) {
 	return cns, nil
 }
 
+func GenerateCNS() CNS {
+	data := make([]byte, 18)
+	data[3] = ' '
+	data[8] = ' '
+	data[13] = ' '
+
+	for i := range 3 {
+		data[i] = randomDigit()
+	}
+
+	for i := 4; i < 8; i++ {
+		data[i] = randomDigit()
+	}
+
+	for i := 9; i < 13; i++ {
+		data[i] = randomDigit()
+	}
+
+	for i := 14; i < 18; i++ {
+		data[i] = randomDigit()
+	}
+
+	return CNS(string(data))
+}
+
 // ErrInvalidCNS is an error returned when an invalid CNS is encountered.
 var ErrInvalidCNS = errors.New("br: invalid cns")
 
