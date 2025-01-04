@@ -20,7 +20,7 @@ func NewCNS(s string) (CNS, error) {
 }
 
 // GenerateCNS generates a pseudo-random valid CNS.
-func GenerateCNS() (foo CNS) {
+func GenerateCNS() CNS {
 	data := make([]byte, 18)
 	data[3] = ' '
 	data[8] = ' '
