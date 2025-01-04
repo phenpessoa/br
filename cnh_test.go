@@ -2,6 +2,23 @@ package br
 
 import "testing"
 
+var cnhSink CNH
+
+func BenchmarkGenerateCNH(b *testing.B) {
+	b.ReportAllocs()
+	for range b.N {
+		cnhSink = GenerateCNH()
+	}
+}
+
+func TestGenerateCNH(t *testing.T) {
+	for range 1_000_000 {
+		if cnh := GenerateCNH(); !cnh.IsValid() {
+			t.Errorf("invalid CNH generated: %s", string(cnh))
+		}
+	}
+}
+
 func BenchmarkCNH_IsValid(b *testing.B) {
 	const cnh = CNH("96300689842")
 	if !cnh.IsValid() {

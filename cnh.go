@@ -18,6 +18,21 @@ func NewCNH(s string) (CNH, error) {
 	return cnh, nil
 }
 
+// GenerateCNH generates a pseudo-random valid CNH.
+func GenerateCNH() CNH {
+	data := make([]byte, 11)
+
+	for i := range 9 {
+		data[i] = randomDigit()
+	}
+
+	var cacheSum int
+	data[9], cacheSum, _ = cnhIterFirst(data)
+	data[10], _ = cnhIterSecond(data, cacheSum)
+
+	return CNH(string(data))
+}
+
 // ErrInvalidCNH is an error returned when an invalid CNH is encountered.
 var ErrInvalidCNH = errors.New("br: invalid cnh")
 
