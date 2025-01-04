@@ -3,13 +3,10 @@ package br
 import (
 	"database/sql/driver"
 	"errors"
-	"unicode"
-
-	"github.com/phenpessoa/gutils/unsafex"
 )
 
-// ErrInvalidCNS is an error returned when an invalid CNS is encountered.
-var ErrInvalidCNS = errors.New("br: invalid cns")
+// CNS represents a Brazilian CNS.
+type CNS string
 
 // NewCNS creates a new CNS instance from a string representation.
 //
@@ -22,38 +19,77 @@ func NewCNS(s string) (CNS, error) {
 	return cns, nil
 }
 
-// CNS represents a Brazilian CNS.
-type CNS string
+// ErrInvalidCNS is an error returned when an invalid CNS is encountered.
+var ErrInvalidCNS = errors.New("br: invalid cns")
 
 // IsValid checks whether the provided CNS is valid based on its checksum digits.
 func (cns CNS) IsValid() bool {
-	if len(cns) != 15 && len(cns) != 18 {
-		return false
-	}
-
-	if !isFirstCNSDigitValid(cns[0]) {
-		return false
-	}
-
-	var sum, pad int
-	for i := 0; i < 15; i++ {
-		cur := cns[i+pad]
-		if unicode.IsSpace(rune(cur)) {
-			if i != 3 && i != 7 && i != 11 {
-				return false
+	switch len(cns) {
+	case 15:
+		switch cns[0] {
+		case '1', '2', '7', '8', '9':
+			var sum int
+			for i := range 15 {
+				cur := cns[i]
+				if !isDigit(cur) {
+					return false
+				}
+				sum += int(cur-'0') * (15 - i)
 			}
-			pad++
-			cur = cns[i+pad]
-		}
-
-		if !isDigit(cur) {
+			return sum%11 == 0
+		default:
 			return false
 		}
+	case 18:
+		switch cns[0] {
+		case '1', '2', '7', '8', '9':
+			if !isSpace(cns[3]) || !isSpace(cns[8]) || !isSpace(cns[13]) {
+				return false
+			}
 
-		sum += int(cur-'0') * (15 - i)
+			var sum int
+			for i := range 3 {
+				cur := cns[i]
+				if !isDigit(cur) {
+					return false
+				}
+				sum += int(cur-'0') * (15 - i)
+			}
+
+			_cns := cns[4:8]
+			for i := range 4 {
+				cur := _cns[i]
+				if !isDigit(cur) {
+					return false
+				}
+				sum += int(cur-'0') * (12 - i)
+			}
+
+			_cns = cns[9:13]
+			for i := range 4 {
+				cur := _cns[i]
+				if !isDigit(cur) {
+					return false
+				}
+				sum += int(cur-'0') * (8 - i)
+			}
+
+			_cns = cns[14:18]
+			for i := range 4 {
+				cur := _cns[i]
+				if !isDigit(cur) {
+					return false
+				}
+				sum += int(cur-'0') * (4 - i)
+			}
+
+			return sum%11 == 0
+		default:
+			return false
+		}
+	default:
+		return false
 	}
-
-	return sum%11 == 0
 }
 
 // String returns the CNS formatted as XXX XXXX XXXX XXXX.
@@ -66,29 +102,21 @@ func (cns CNS) String() string {
 		return string(cns)
 	}
 
+	if len(cns) != 15 {
+		return ""
+	}
+
 	out := make([]byte, 18)
+	out[3] = ' '
+	out[8] = ' '
+	out[13] = ' '
 
-	var pad int
-	for i := range out {
-		switch i {
-		case 3, 8, 13:
-			out[i] = ' '
-			pad++
-			continue
-		}
-		out[i] = cns[i-pad]
-	}
+	copy(out[:3], cns[:3])
+	copy(out[4:8], cns[3:7])
+	copy(out[9:13], cns[7:11])
+	copy(out[14:18], cns[11:15])
 
-	return unsafex.String(out)
-}
-
-func isFirstCNSDigitValid(d byte) bool {
-	switch d {
-	case '1', '2', '7', '8', '9':
-		return true
-	default:
-		return false
-	}
+	return string(out)
 }
 
 // Value implements the driver.Valuer interface for CNS.

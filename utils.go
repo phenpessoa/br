@@ -5,6 +5,10 @@ import (
 	"math/rand/v2"
 )
 
+func isSpace(b byte) bool {
+	return b == ' '
+}
+
 func isDigit(b byte) bool {
 	return b >= '0' && b <= '9'
 }

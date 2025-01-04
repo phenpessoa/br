@@ -5,10 +5,46 @@ import (
 	"testing"
 )
 
-func BenchmarkCNS_IsValid(b *testing.B) {
+func BenchmarkCNS_IsValid15(b *testing.B) {
 	const randomCNS = CNS("708521331850008")
 	if !randomCNS.IsValid() {
 		b.Error("invalid randomCNS on benchmark")
+		b.FailNow()
+	}
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		boolSink = randomCNS.IsValid()
+	}
+}
+
+func BenchmarkCNS_IsValid18(b *testing.B) {
+	const randomCNS = CNS("708 5213 3185 0008")
+	if !randomCNS.IsValid() {
+		b.Error("invalid randomCNS on benchmark")
+		b.FailNow()
+	}
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		boolSink = randomCNS.IsValid()
+	}
+}
+
+func BenchmarkCNS_IsValid15Invalid(b *testing.B) {
+	const randomCNS = CNS("708521331850009")
+	if randomCNS.IsValid() {
+		b.Error("valid randomCNS on benchmark")
+		b.FailNow()
+	}
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		boolSink = randomCNS.IsValid()
+	}
+}
+
+func BenchmarkCNS_IsValid18Invalid(b *testing.B) {
+	const randomCNS = CNS("708 5213 3185 0009")
+	if randomCNS.IsValid() {
+		b.Error("valid randomCNS on benchmark")
 		b.FailNow()
 	}
 	b.ReportAllocs()
@@ -116,6 +152,66 @@ func TestCNS_IsValid(t *testing.T) {
 		{
 			name:  "valid 2",
 			cns:   CNS("174598435280018"),
+			valid: true,
+		},
+		{
+			name:  "valid random 1 raw",
+			cns:   CNS("183213080530001"),
+			valid: true,
+		},
+		{
+			name:  "valid random 1 formatted",
+			cns:   CNS("183 2130 8053 0001"),
+			valid: true,
+		},
+		{
+			name:  "valid random 2 raw",
+			cns:   CNS("264271429160001"),
+			valid: true,
+		},
+		{
+			name:  "valid random 2 formatted",
+			cns:   CNS("264 2714 2916 0001"),
+			valid: true,
+		},
+		{
+			name:  "valid random 3 raw",
+			cns:   CNS("701673879130008"),
+			valid: true,
+		},
+		{
+			name:  "valid random 3 formatted",
+			cns:   CNS("701 6738 7913 0008"),
+			valid: true,
+		},
+		{
+			name:  "valid random 4 raw",
+			cns:   CNS("898751271300007"),
+			valid: true,
+		},
+		{
+			name:  "valid random 4 formatted",
+			cns:   CNS("898 7512 7130 0007"),
+			valid: true,
+		},
+		{
+			name:  "valid random 5 raw",
+			cns:   CNS("968624179750008"),
+			valid: true,
+		},
+		{
+			name:  "valid random 5 formatted",
+			cns:   CNS("968 6241 7975 0008"),
+			valid: true,
+		},
+		{
+			name:  "valid random 6 raw",
+			cns:   CNS("219248489290018"),
+			valid: true,
+		},
+		{
+			name:  "valid random 5 formatted",
+			cns:   CNS("219248489290018"),
 			valid: true,
 		},
 	} {
