@@ -19,10 +19,10 @@ import (
 
 var (
 	// ErrInvalidUF is returned when an invalid state (UF) code is passed.
-	ErrInvalidUF = errors.New("br: invalid uf passed")
+	ErrInvalidUF = errors.New("br: invalid uf")
 
 	// ErrInvalidCEP is returned when an invalid CEP code is passed.
-	ErrInvalidCEP = errors.New("br: invalid cep passed")
+	ErrInvalidCEP = errors.New("br: invalid cep")
 
 	// ErrInvalidSerializedAddress is returned when trying to deserialize an invalid string into an Address.
 	ErrInvalidSerializedAddress = errors.New("br: invalid serialized address")

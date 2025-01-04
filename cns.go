@@ -9,7 +9,7 @@ import (
 )
 
 // ErrInvalidCNS is an error returned when an invalid CNS is encountered.
-var ErrInvalidCNS = errors.New("br: invalid cns passed")
+var ErrInvalidCNS = errors.New("br: invalid cns")
 
 // NewCNS creates a new CNS instance from a string representation.
 //

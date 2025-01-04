@@ -1,19 +1,11 @@
 package br
 
 import (
-	"bytes"
 	"errors"
-
-	"github.com/phenpessoa/gutils/unsafex"
 )
 
-var (
-	// ErrInvalidCNH is an error returned when an invalid CNH is encountered.
-	ErrInvalidCNH = errors.New("br: invalid cnh passed")
-
-	cnhFirstTable  = []int{2, 3, 4, 5, 6, 7, 8, 9, 10}
-	cnhSecondTable = []int{3, 4, 5, 6, 7, 8, 9, 10, 11, 2}
-)
+// CNH represents a Brazilian driver's license number.
+type CNH string
 
 // NewCNH creates a new CNH instance from a string representation.
 //
@@ -26,66 +18,87 @@ func NewCNH(s string) (CNH, error) {
 	return cnh, nil
 }
 
-// CNH represents a Brazilian driver's license number.
-type CNH string
+// ErrInvalidCNH is an error returned when an invalid CNH is encountered.
+var ErrInvalidCNH = errors.New("br: invalid cnh")
+
+var cnhFirstTable = []int{2, 3, 4, 5, 6, 7, 8, 9, 10}
 
 // IsValid checks whether the provided CNH is valid based on its checksum digits.
 func (cnh CNH) IsValid() bool {
-	if len(cnh) != 11 {
+	switch len(cnh) {
+	case 11:
+		dByte, cacheSum, ok := cnhIterFirst(cnh)
+		if !ok {
+			return false
+		}
+
+		if cnh[len(cnh)-2] != dByte {
+			return false
+		}
+
+		dByte, ok = cnhIterSecond(cnh, cacheSum)
+		if !ok {
+			return false
+		}
+
+		return cnh[len(cnh)-1] == dByte
+	default:
 		return false
 	}
+}
 
-	buf := make([]byte, 11)
-	for i := range cnh {
-		buf[i] = cnh[i]
+func cnhIterFirst[T string | CNH | []byte](cnh T) (byte, int, bool) {
+	if len(cnh) != 11 || len(cnhFirstTable) != 9 {
+		panic("not 11 or 9 - cnh")
 	}
 
-	var sum1 int
+	var sum, cacheSum, rest, out int
+
 	for i, d := range cnhFirstTable {
-		c := int(buf[i] - '0')
-		if c < 0 || c > 9 {
-			return false
+		cur := cnh[i]
+		if !isDigit(cur) {
+			return 0, 0, false
 		}
-		sum1 += d * c
-	}
-	rest1 := sum1 % 11
-	d1 := 0
-
-	if rest1 >= 2 {
-		d1 = 11 - rest1
+		parsed := int(cur - '0')
+		sum += d * parsed
+		cacheSum += parsed
 	}
 
-	if d1 == 0 {
-		buf[9] = '0'
-	} else {
-		buf[9] = byte(d1) + '0'
+	rest = sum % 11
+
+	if rest >= 2 {
+		out = 11 - rest
 	}
 
-	var sum2 int
-	for i, d := range cnhSecondTable {
-		c := int(buf[i] - '0')
-		if c < 0 || c > 9 {
-			return false
-		}
-		sum2 += d * c
-	}
-	rest2 := sum2 % 11
-	d2 := 0
+	return byte(out) + '0', cacheSum + sum, true
+}
 
-	if rest2 >= 2 {
-		d2 = 11 - rest2
+func cnhIterSecond[T string | CNH | []byte](cnh T, sum int) (byte, bool) {
+	if len(cnh) != 11 {
+		panic("not 11 - cnh")
 	}
 
-	if d2 == 0 {
-		buf[10] = '0'
-	} else {
-		buf[10] = byte(d2) + '0'
+	var rest, out int
+
+	last := cnh[9]
+	if !isDigit(last) {
+		return 0, false
+	}
+	sum += 2 * int(last-'0')
+
+	rest = sum % 11
+
+	if rest >= 2 {
+		out = 11 - rest
 	}
 
-	return bytes.Equal(buf, unsafex.ByteSlice(string(cnh)))
+	return byte(out) + '0', true
 }
 
 // String returns the string representation of CNH.
 func (cnh CNH) String() string {
+	if !cnh.IsValid() {
+		return ""
+	}
 	return string(cnh)
 }
