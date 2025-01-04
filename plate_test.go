@@ -2,6 +2,23 @@ package br
 
 import "testing"
 
+var plateSink Plate
+
+func BenchmarkGeneratePlate(b *testing.B) {
+	b.ReportAllocs()
+	for range b.N {
+		plateSink = GeneratePlate()
+	}
+}
+
+func TestGeneratePlate(t *testing.T) {
+	for range 1_000_000 {
+		if plate := GeneratePlate(); !plate.IsValid() {
+			t.Errorf("invalid Plate generated: %s", string(plate))
+		}
+	}
+}
+
 func BenchmarkPlate_IsValid8(b *testing.B) {
 	const plate = Plate("BRA-2023")
 	if !plate.IsValid() {
@@ -135,6 +152,11 @@ func TestPlate_IsValid(t *testing.T) {
 		{
 			name:  "invalid plate 1",
 			plate: Plate("BRAA2023"),
+			valid: false,
+		},
+		{
+			name:  "invalid plate 2",
+			plate: Plate("BRA-A023"),
 			valid: false,
 		},
 	} {

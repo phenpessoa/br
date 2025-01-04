@@ -17,6 +17,21 @@ func NewPlate(s string) (Plate, error) {
 	return plate, nil
 }
 
+func GeneratePlate() Plate {
+	data := make([]byte, 8)
+	data[3] = '-'
+
+	for i := range 3 {
+		data[i] = randomAlphaUpper()
+	}
+
+	data[4] = randomDigit()
+	data[5] = randomAlphaNumericalUpper()
+	data[6], data[7] = randomDigit(), randomDigit()
+
+	return Plate(string(data))
+}
+
 // ErrInvalidPlate is an error returned when an invalid license plate is encountered.
 var ErrInvalidPlate = errors.New("br: invalid license plate")
 
@@ -54,6 +69,10 @@ func (p Plate) IsValid() bool {
 			if !isAlphaUpper(cur) {
 				return false
 			}
+		}
+
+		if !isDigit(p[4]) {
+			return false
 		}
 
 		if !isAlphaNumericalUpper(asciiLowerToUpper(p[5])) {
