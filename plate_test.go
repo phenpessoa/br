@@ -2,7 +2,7 @@ package br
 
 import "testing"
 
-func BenchmarkPlate_IsValid(b *testing.B) {
+func BenchmarkPlate_IsValid8(b *testing.B) {
 	const plate = Plate("BRA-2023")
 	if !plate.IsValid() {
 		b.Error("invalid plate on benchmark")
@@ -11,6 +11,78 @@ func BenchmarkPlate_IsValid(b *testing.B) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		boolSink = plate.IsValid()
+	}
+}
+
+func BenchmarkPlate_IsValid7(b *testing.B) {
+	const plate = Plate("BRA2023")
+	if !plate.IsValid() {
+		b.Error("invalid plate on benchmark")
+		b.FailNow()
+	}
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		boolSink = plate.IsValid()
+	}
+}
+
+func BenchmarkPlate_IsValidInvalid8(b *testing.B) {
+	const plate = Plate("BRA-202A")
+	if plate.IsValid() {
+		b.Error("valid plate on benchmark")
+		b.FailNow()
+	}
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		boolSink = plate.IsValid()
+	}
+}
+
+func BenchmarkPlate_IsValidInvalid7(b *testing.B) {
+	const plate = Plate("BRA202A")
+	if plate.IsValid() {
+		b.Error("valid plate on benchmark")
+		b.FailNow()
+	}
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		boolSink = plate.IsValid()
+	}
+}
+
+func BenchmarkPlate_String8Dash(b *testing.B) {
+	const plate = Plate("BRA-2023")
+	if !plate.IsValid() {
+		b.Error("invalid plate on benchmark")
+		b.FailNow()
+	}
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		stringSink = plate.String()
+	}
+}
+
+func BenchmarkPlate_String8Dot(b *testing.B) {
+	const plate = Plate("BRA.2023")
+	if !plate.IsValid() {
+		b.Error("invalid plate on benchmark")
+		b.FailNow()
+	}
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		stringSink = plate.String()
+	}
+}
+
+func BenchmarkPlate_String7(b *testing.B) {
+	const plate = Plate("BRA2023")
+	if !plate.IsValid() {
+		b.Error("invalid plate on benchmark")
+		b.FailNow()
+	}
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		stringSink = plate.String()
 	}
 }
 
