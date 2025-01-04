@@ -19,6 +19,7 @@ func NewCNS(s string) (CNS, error) {
 	return cns, nil
 }
 
+// GenerateCNS generates a pseudo-random valid CNS.
 func GenerateCNS() CNS {
 	data := make([]byte, 18)
 	data[3] = ' '

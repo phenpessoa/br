@@ -17,6 +17,7 @@ func NewPlate(s string) (Plate, error) {
 	return plate, nil
 }
 
+// GeneratePlate generates a pseudo-random valid Plate.
 func GeneratePlate() Plate {
 	data := make([]byte, 8)
 	data[3] = '-'
