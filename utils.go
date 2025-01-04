@@ -30,8 +30,42 @@ func asciiLowerToUpper(b byte) byte {
 
 var pcg = rand.NewPCG(rand.Uint64(), rand.Uint64())
 
+func randomZeroOr1() byte {
+	var n uint64 = ('1' + 1) - '0'
+
+	// This code here is taken from the stdlib.
+	// You can check it at the math/rand/v2 package under func '(r *Rand) uint64n(n uint64) uint64'.
+	hi, lo := bits.Mul64(pcg.Uint64(), n)
+	if lo < n {
+		thresh := -n % n
+		for lo < thresh {
+			hi, lo = bits.Mul64(pcg.Uint64(), n)
+		}
+	}
+
+	return byte(hi) + '0'
+}
+
+var cnsFirstDigits = []byte{'1', '2', '7', '8', '9'}
+
+func randomCNSFirstDigit() byte {
+	n := uint64(len(cnsFirstDigits))
+
+	// This code here is taken from the stdlib.
+	// You can check it at the math/rand/v2 package under func '(r *Rand) uint64n(n uint64) uint64'.
+	hi, lo := bits.Mul64(pcg.Uint64(), n)
+	if lo < n {
+		thresh := -n % n
+		for lo < thresh {
+			hi, lo = bits.Mul64(pcg.Uint64(), n)
+		}
+	}
+
+	return cnsFirstDigits[int(hi)]
+}
+
 func randomDigit() byte {
-	var n uint64 = '9' - '0'
+	var n uint64 = ('9' + 1) - '0'
 
 	// This code here is taken from the stdlib.
 	// You can check it at the math/rand/v2 package under func '(r *Rand) uint64n(n uint64) uint64'.
@@ -47,7 +81,7 @@ func randomDigit() byte {
 }
 
 func randomAlphaUpper() byte {
-	var n uint64 = 'Z' - 'A'
+	var n uint64 = ('Z' + 1) - 'A'
 
 	// This code here is taken from the stdlib.
 	// You can check it at the math/rand/v2 package under func '(r *Rand) uint64n(n uint64) uint64'.

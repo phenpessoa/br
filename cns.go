@@ -20,27 +20,37 @@ func NewCNS(s string) (CNS, error) {
 }
 
 // GenerateCNS generates a pseudo-random valid CNS.
-func GenerateCNS() CNS {
+func GenerateCNS() (foo CNS) {
 	data := make([]byte, 18)
 	data[3] = ' '
 	data[8] = ' '
 	data[13] = ' '
 
-	for i := range 3 {
-		data[i] = randomDigit()
+	fd := randomCNSFirstDigit()
+	data[0] = fd
+	sum := int(fd-'0') * 15
+
+	for i := 1; i < 3; i++ {
+		d := randomDigit()
+		data[i] = d
+		sum += int(d-'0') * (15 - i)
 	}
 
 	for i := 4; i < 8; i++ {
-		data[i] = randomDigit()
+		d := randomDigit()
+		data[i] = d
+		sum += int(d-'0') * (16 - i)
 	}
 
 	for i := 9; i < 13; i++ {
-		data[i] = randomDigit()
+		d := randomDigit()
+		data[i] = d
+		sum += int(d-'0') * (17 - i)
 	}
 
-	for i := 14; i < 18; i++ {
-		data[i] = randomDigit()
-	}
+	data[14] = '0'
+	data[15] = '0'
+	data[17], data[16] = cnsFindLastBytes18(data)
 
 	return CNS(string(data))
 }
@@ -116,6 +126,59 @@ func (cns CNS) IsValid() bool {
 	default:
 		return false
 	}
+}
+
+func cnsFindLastBytes18[T string | CNS | []byte](cns T) (dv, secondToLast byte) {
+	if len(cns) != 18 {
+		panic("not 18 - cns")
+	}
+
+	var sum int
+	for i := range 3 {
+		cur := cns[i]
+		if !isDigit(cur) {
+			return 0, 0
+		}
+		sum += int(cur-'0') * (15 - i)
+	}
+
+	_cns := cns[4:8]
+	for i := range 4 {
+		cur := _cns[i]
+		if !isDigit(cur) {
+			return 0, 0
+		}
+		sum += int(cur-'0') * (12 - i)
+	}
+
+	_cns = cns[9:13]
+	for i := range 4 {
+		cur := _cns[i]
+		if !isDigit(cur) {
+			return 0, 0
+		}
+		sum += int(cur-'0') * (8 - i)
+	}
+
+	dvi := 11 - (sum % 11)
+	if dvi == 11 {
+		dvi = 0
+	}
+
+	var secondToLasti int
+
+	if dvi == 10 {
+		sum += 2
+
+		dvi = 11 - (sum % 11)
+		if dvi == 11 {
+			dvi = 0
+		}
+
+		secondToLasti = 1
+	}
+
+	return byte(dvi) + '0', byte(secondToLasti) + '0'
 }
 
 // String returns the CNS formatted as XXX XXXX XXXX XXXX.

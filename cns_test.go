@@ -16,7 +16,7 @@ func BenchmarkGenerateCNS(b *testing.B) {
 
 func TestGenerateCNS(t *testing.T) {
 	for range 1_000_000 {
-		if cns := GenerateCPF(); !cns.IsValid() {
+		if cns := GenerateCNS(); !cns.IsValid() {
 			t.Errorf("invalid CNS generated: %s", string(cns))
 		}
 	}
@@ -227,8 +227,8 @@ func TestCNS_IsValid(t *testing.T) {
 			valid: true,
 		},
 		{
-			name:  "valid random 5 formatted",
-			cns:   CNS("219248489290018"),
+			name:  "valid random 6 formatted",
+			cns:   CNS("219 2484 8929 0018"),
 			valid: true,
 		},
 	} {
