@@ -242,3 +242,31 @@ func TestCNPJ_String(t *testing.T) {
 		})
 	}
 }
+
+func TestCNPJAlphaNumerical(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		cnpj CNPJ
+		want string
+	}{
+		{
+			name: "formatted CNPJ Petrobras",
+			cnpj: CNPJ("33.000.167/1002-46"),
+			want: "33000167100246",
+		},
+		{
+			name: "raw CNPJ Petrobras",
+			cnpj: CNPJ("33000167100246"),
+			want: "33000167100246",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.cnpj.AlphaNumerical() != tc.want {
+				t.Errorf(
+					"\ncnpj: %s\nshould be formatted like: %s\nis formatted like: %s",
+					tc.cnpj, tc.want, tc.cnpj.String(),
+				)
+			}
+		})
+	}
+}

@@ -276,6 +276,26 @@ func (cnpj CNPJ) String() string {
 	return string(out)
 }
 
+func (cnpj CNPJ) AlphaNumerical() string {
+	if !cnpj.IsValid() {
+		return ""
+	}
+
+	if len(cnpj) == 18 {
+		out := make([]byte, 14)
+
+		copy(out[0:2], cnpj[0:2])
+		copy(out[2:5], cnpj[3:6])
+		copy(out[5:8], cnpj[7:10])
+		copy(out[8:12], cnpj[11:15])
+		copy(out[12:14], cnpj[16:18])
+
+		return string(out)
+	}
+
+	return string(cnpj)
+}
+
 // Value implements the driver.Valuer interface for CNPJ.
 func (cnpj CNPJ) Value() (driver.Value, error) {
 	return cnpj.String(), nil
