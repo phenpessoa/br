@@ -534,6 +534,10 @@ type Address struct {
 	NomeUnidade string `json:"nomeUnidade"`
 }
 
+func (addr Address) String() string {
+	return addr.Logradouro + ", " + addr.Complemento + " - " + addr.Bairro + ", " + addr.Localidade + " - " + addr.UF.String() + ", " + addr.CEP.String()
+}
+
 func (addr Address) serializedSize() int {
 	return 2 + 5 + // uf
 		len(addr.Localidade) + 5 +
