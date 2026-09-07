@@ -327,7 +327,7 @@ func (cep CEP) IsValid() bool {
 	}
 
 	var pad int
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		cur := cep[i+pad]
 		if i == 5 && l == 9 {
 			pad++
