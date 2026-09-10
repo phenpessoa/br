@@ -28,23 +28,36 @@ func asciiLowerToUpper(b byte) byte {
 	return b
 }
 
-var pcg = rand.NewPCG(rand.Uint64(), rand.Uint64())
-
-func randomZeroOr1() byte {
-	var n uint64 = ('1' + 1) - '0'
-
-	// This code here is taken from the stdlib.
-	// You can check it at the math/rand/v2 package under func '(r *Rand) uint64n(n uint64) uint64'.
-	hi, lo := bits.Mul64(pcg.Uint64(), n)
-	if lo < n {
-		thresh := -n % n
-		for lo < thresh {
-			hi, lo = bits.Mul64(pcg.Uint64(), n)
-		}
-	}
-
-	return byte(hi) + '0'
+// load64 returns the first 8 bytes of s as a little-endian word. The shift
+// pattern is recognized by the compiler and becomes a single wide load on
+// little-endian platforms.
+func load64(s string) uint64 {
+	_ = s[7]
+	return uint64(s[0]) | uint64(s[1])<<8 | uint64(s[2])<<16 | uint64(s[3])<<24 |
+		uint64(s[4])<<32 | uint64(s[5])<<40 | uint64(s[6])<<48 | uint64(s[7])<<56
 }
+
+// load32 returns the first 4 bytes of s as a little-endian word.
+func load32(s string) uint32 {
+	_ = s[3]
+	return uint32(s[0]) | uint32(s[1])<<8 | uint32(s[2])<<16 | uint32(s[3])<<24
+}
+
+// nonDigits64 returns 0 if and only if all 8 bytes of v are ASCII digits.
+//
+// A byte is a digit if its high nibble is 3 and adding 6 to it does not carry
+// into the high nibble (that is, its low nibble is at most 9).
+func nonDigits64(v uint64) uint64 {
+	return ((v & 0xF0F0F0F0F0F0F0F0) |
+		(((v + 0x0606060606060606) & 0xF0F0F0F0F0F0F0F0) >> 4)) ^ 0x3333333333333333
+}
+
+// nonDigits32 is nonDigits64 for 4 byte words.
+func nonDigits32(v uint32) uint32 {
+	return ((v & 0xF0F0F0F0) | (((v + 0x06060606) & 0xF0F0F0F0) >> 4)) ^ 0x33333333
+}
+
+var pcg = rand.NewPCG(rand.Uint64(), rand.Uint64())
 
 var cnsFirstDigits = []byte{'1', '2', '7', '8', '9'}
 
