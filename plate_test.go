@@ -197,6 +197,21 @@ func TestPlate_String(t *testing.T) {
 			plate: Plate("BRA.2023"),
 			want:  "BRA-2023",
 		},
+		{
+			name:  "lowercase mercosul plate",
+			plate: Plate("bra-2a23"),
+			want:  "BRA-2A23",
+		},
+		{
+			name:  "lowercase raw plate",
+			plate: Plate("bra2023"),
+			want:  "BRA-2023",
+		},
+		{
+			name:  "lowercase dot plate",
+			plate: Plate("bra.2a23"),
+			want:  "BRA-2A23",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.plate.String() != tc.want {

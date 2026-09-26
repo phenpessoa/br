@@ -95,14 +95,11 @@ func (p Plate) String() string {
 	}
 
 	if len(p) == 8 {
-		if p[3] == '-' {
-			return string(p)
+		out := []byte(p)
+		if p[3] != '-' {
+			out[3] = '-'
 		}
-
-		out := make([]byte, 8)
-		copy(out, p)
-		out[3] = '-'
-		return string(out)
+		return upperASCII(out)
 	}
 
 	if len(p) != 7 {
@@ -114,7 +111,14 @@ func (p Plate) String() string {
 	out[3] = '-'
 	copy(out[4:8], p[3:7])
 
-	return string(out)
+	return upperASCII(out)
+}
+
+func upperASCII(b []byte) string {
+	for i, c := range b {
+		b[i] = asciiLowerToUpper(c)
+	}
+	return string(b)
 }
 
 // Value implements the driver.Valuer interface for Plate.
