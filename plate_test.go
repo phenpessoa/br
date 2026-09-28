@@ -103,6 +103,18 @@ func BenchmarkPlate_String7(b *testing.B) {
 	}
 }
 
+func BenchmarkPlate_String8DashLower(b *testing.B) {
+	const plate = Plate("bra-2a23")
+	if !plate.IsValid() {
+		b.Error("invalid plate on benchmark")
+		b.FailNow()
+	}
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		stringSink = plate.String()
+	}
+}
+
 func TestPlate_IsValid(t *testing.T) {
 	for _, tc := range []struct {
 		name  string
@@ -196,6 +208,26 @@ func TestPlate_String(t *testing.T) {
 			name:  "dot formatted plate",
 			plate: Plate("BRA.2023"),
 			want:  "BRA-2023",
+		},
+		{
+			name:  "lowercase mercosul plate",
+			plate: Plate("bra-2a23"),
+			want:  "BRA-2A23",
+		},
+		{
+			name:  "lowercase raw plate",
+			plate: Plate("bra2023"),
+			want:  "BRA-2023",
+		},
+		{
+			name:  "lowercase dot plate",
+			plate: Plate("bra.2a23"),
+			want:  "BRA-2A23",
+		},
+		{
+			name:  "mixed case mercosul plate",
+			plate: Plate("Bra-2a23"),
+			want:  "BRA-2A23",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

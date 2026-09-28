@@ -95,13 +95,14 @@ func (p Plate) String() string {
 	}
 
 	if len(p) == 8 {
-		if p[3] == '-' {
+		if p[3] == '-' && !hasLowerPlate(p) {
 			return string(p)
 		}
 
 		out := make([]byte, 8)
 		copy(out, p)
 		out[3] = '-'
+		upperPlate(out)
 		return string(out)
 	}
 
@@ -113,8 +114,24 @@ func (p Plate) String() string {
 	copy(out[:3], p[:3])
 	out[3] = '-'
 	copy(out[4:8], p[3:7])
+	upperPlate(out)
 
 	return string(out)
+}
+
+// hasLowerPlate reports whether a valid plate has a lowercase letter.
+func hasLowerPlate(p Plate) bool {
+	return p[0] >= 'a' || p[1] >= 'a' || p[2] >= 'a' || p[5] >= 'a'
+}
+
+// upperPlate changes the letters of a valid plate in the XXX-XXXX format to
+// uppercase, in place.
+func upperPlate(b []byte) {
+	_ = b[7]
+	b[0] &^= 0x20
+	b[1] &^= 0x20
+	b[2] &^= 0x20
+	b[5] = asciiLowerToUpper(b[5])
 }
 
 // Value implements the driver.Valuer interface for Plate.
